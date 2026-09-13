@@ -1,0 +1,122 @@
+import { z } from 'zod'
+
+// Auth schemas
+export const registerSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  role: z.enum(['model', 'business'], {
+    errorMap: () => ({ message: 'Role must be either "model" or "business"' }),
+  }),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+})
+
+export const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+})
+
+export const passwordResetRequestSchema = z.object({
+  email: z.string().email('Invalid email address'),
+})
+
+export const passwordResetSchema = z.object({
+  token: z.string().min(1, 'Reset token is required'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+})
+
+// Profile schemas
+export const modelProfileSchema = z.object({
+  bio: z.string().max(1000, 'Bio must be at most 1000 characters').optional(),
+  specialties: z.array(z.string()).min(1, 'At least one specialty is required'),
+  experience: z.enum(['beginner', 'intermediate', 'professional', 'expert']),
+  location: z.object({
+    city: z.string(),
+    country: z.string(),
+  }),
+  portfolio: z.array(z.string()).optional(),
+  socialHandle: z.string().max(100, 'Social media handle must be at most 100 characters').optional(),
+})
+
+export const businessProfileSchema = z.object({
+  companyName: z.string().min(1, 'Company name is required'),
+  industry: z.string().min(1, 'Industry is required'),
+  description: z.string().max(1000, 'Description must be at most 1000 characters').optional(),
+  website: z.string().url('Invalid website URL').optional().or(z.literal('')),
+  location: z.object({
+    city: z.string(),
+    country: z.string(),
+  }),
+  socialHandle: z.string().max(100, 'Social media handle must be at most 100 characters').optional(),
+  logoUrl: z.string().optional(),
+})
+
+// Pricing schema
+export const pricingSchema = z.object({
+  baseRate: z.number().positive('Base rate must be positive'),
+  currency: z.string().length(3, 'Currency must be a 3-letter code'),
+  rateUnit: z.enum(['hour', 'day', 'project', 'shoot']),
+  negotiable: z.boolean().default(true),
+})
+
+// Availability schema
+export const availabilitySchema = z.object({
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  hoursPerWeek: z.number().int().min(0).max(168),
+  type: z.enum(['available', 'unavailable']),
+})
+
+// Opportunity schema
+export const opportunitySchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200),
+  description: z.string().min(1, 'Description is required'),
+  type: z.enum(['shoot', 'campaign', 'test', 'collaboration', 'other']),
+  budget: z.object({
+    min: z.number().positive('Min budget must be positive'),
+    max: z.number().positive('Max budget must be positive'),
+    currency: z.string().length(3),
+  }),
+  deadline: z.string().datetime(),
+  location: z.object({
+    city: z.string(),
+    country: z.string(),
+  }).optional(),
+  tags: z.array(z.string()).optional(),
+  requirements: z.array(z.string()).optional(),
+  durationDays: z.number().int().positive('Duration must be positive').optional(),
+})
+
+// Application schema
+export const applicationSchema = z.object({
+  proposedPrice: z.number().positive('Proposed price must be positive'),
+  message: z.string().min(1, 'Message is required').max(1000),
+})
+
+// Chat schemas
+export const messageSchema = z.object({
+  content: z.string().min(1, 'Message cannot be empty').max(5000),
+  type: z.enum(['text', 'attachment']).default('text'),
+})
+
+export const createConversationSchema = z.object({
+  opportunityId: z.string().optional(),
+  recipientId: z.string().min(1, 'Recipient ID is required'),
+})
+
+// Pagination schema
+export const paginationSchema = z.object({
+  page: z.string().transform(Number).pipe(z.number().int().min(1)).default('1'),
+  limit: z.string().transform(Number).pipe(z.number().int().min(1).max(100)).default('20'),
+})
+
+export type RegisterInput = z.infer<typeof registerSchema>
+export type LoginInput = z.infer<typeof loginSchema>
+export type ModelProfileInput = z.infer<typeof modelProfileSchema>
+export type BusinessProfileInput = z.infer<typeof businessProfileSchema>
+export type PricingInput = z.infer<typeof pricingSchema>
+export type AvailabilityInput = z.infer<typeof availabilitySchema>
+export type OpportunityInput = z.infer<typeof opportunitySchema>
+export type ApplicationInput = z.infer<typeof applicationSchema>
+export type MessageInput = z.infer<typeof messageSchema>
+export type PaginationInput = z.infer<typeof paginationSchema>
