@@ -5,7 +5,7 @@ export const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   role: z.enum(['model', 'business'], {
-    errorMap: () => ({ message: 'Role must be either "model" or "business"' }),
+    message: 'Role must be either "model" or "business"',
   }),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
@@ -106,9 +106,10 @@ export const createConversationSchema = z.object({
 
 // Pagination schema
 export const paginationSchema = z.object({
-  page: z.string().transform(Number).pipe(z.number().int().min(1)).default('1'),
-  limit: z.string().transform(Number).pipe(z.number().int().min(1).max(100)).default('20'),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
 })
+
 
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>

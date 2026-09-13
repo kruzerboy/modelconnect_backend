@@ -8,11 +8,19 @@ import { parseBody, serialize } from '@/lib/route-utils'
 export async function PUT(request: NextRequest) {
   try {
     const auth = await requireAuth(request)
-    const schema = auth.role === 'model' ? modelProfileSchema : businessProfileSchema
-    const input = await parseBody(request, schema)
-    const db = await connectDb(); const collection = auth.role === 'model' ? 'modelProfiles' : 'businessProfiles'; const now = new Date()
-    const profile = await db.collection(collection).findOneAndUpdate({ userId: auth.userId }, { $set: { ...input, userId: auth.userId, updatedAt: now }, $setOnInsert: { createdAt: now } }, { upsert: true, returnDocument: 'after' })
+    const input = auth.role === 'model'
+      ? await parseBody(request, modelProfileSchema)
+      : await parseBody(request, businessProfileSchema)
+    const db = await connectDb()
+    const collection = auth.role === 'model' ? 'modelProfiles' : 'businessProfiles'
+    const now = new Date()
+    const profile = await db.collection(collection).findOneAndUpdate(
+      { userId: auth.userId },
+      { $set: { ...input, userId: auth.userId, updatedAt: now }, $setOnInsert: { createdAt: now } },
+      { upsert: true, returnDocument: 'after' }
+    )
     return NextResponse.json(successResponse(serialize(profile)))
+
   } catch (error) { return handleApiError(error) }
 }
 
