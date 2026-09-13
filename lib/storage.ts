@@ -2,7 +2,68 @@ import fs from 'fs'
 import path from 'path'
 import crypto from 'crypto'
 import { NextRequest } from 'next/server'
+import { v2 as cloudinary } from 'cloudinary'
 import { ApiError, ERROR_CODES } from './api-response'
+
+/**
+ * Checks if Cloudinary credentials are provided via environment variables.
+ */
+export function isCloudinaryConfigured(): boolean {
+  if (process.env.CLOUDINARY_URL && process.env.CLOUDINARY_URL.trim().length > 0) {
+    return true
+  }
+  return Boolean(
+    process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET
+  )
+}
+
+function initCloudinary() {
+  if (process.env.CLOUDINARY_URL) {
+    cloudinary.config({
+      cloudinary_url: process.env.CLOUDINARY_URL,
+      secure: true,
+    })
+  } else if (process.env.CLOUDINARY_CLOUD_NAME) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+      secure: true,
+    })
+  }
+}
+
+/**
+ * Uploads a file buffer directly to Cloudinary.
+ */
+export async function uploadToCloudinary(
+  buffer: Buffer,
+  folder = 'modelconnect'
+): Promise<{ url: string; publicId: string }> {
+  initCloudinary()
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: 'image',
+      },
+      (error, result) => {
+        if (error || !result) {
+          reject(new ApiError(ERROR_CODES.INTERNAL_ERROR, 500, error?.message || 'Cloudinary upload failed'))
+        } else {
+          resolve({
+            url: result.secure_url,
+            publicId: result.public_id,
+          })
+        }
+      }
+    )
+    uploadStream.end(buffer)
+  })
+}
+
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -78,7 +139,21 @@ export async function saveUploadedFile(request: NextRequest, file: File): Promis
     )
   }
 
-  // Determine safe extension
+  const arrayBuffer = await file.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+
+  // 1. If Cloudinary is configured, upload directly to Cloudinary
+  if (isCloudinaryConfigured()) {
+    const { url, publicId } = await uploadToCloudinary(buffer)
+    return {
+      filename: publicId,
+      size: file.size,
+      mimeType,
+      url,
+    }
+  }
+
+  // 2. Fallback to local persistent disk storage
   let ext = path.extname(file.name || '').toLowerCase()
   if (!ext || ext.length < 2) {
     ext = MIME_EXTENSION_MAP[mimeType] || '.jpg'
@@ -92,8 +167,7 @@ export async function saveUploadedFile(request: NextRequest, file: File): Promis
   const storageDir = getStorageDir()
   const targetPath = path.join(storageDir, filename)
 
-  const arrayBuffer = await file.arrayBuffer()
-  await fs.promises.writeFile(targetPath, Buffer.from(arrayBuffer))
+  await fs.promises.writeFile(targetPath, buffer)
 
   const url = buildPublicUrl(request, filename)
 

@@ -5,6 +5,10 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   UPLOAD_DIR: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
+  CLOUDINARY_URL: z.string().optional(),
 })
 
 let validatedEnv: z.infer<typeof envSchema> | null = null
