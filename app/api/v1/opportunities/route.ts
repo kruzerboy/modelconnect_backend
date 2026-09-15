@@ -8,13 +8,64 @@ import { createPaginatedResponse, getPaginationParams } from '@/lib/helpers'
 
 export async function GET(request: NextRequest) {
   try {
-    const page = Number(queryParam(request, 'page', '1')); const limit = Number(queryParam(request, 'limit', '20')); const pagination = getPaginationParams(page, limit)
-    const filter: Record<string, unknown> = { status: 'open', deadline: { $gte: new Date() } }
-    const tag = queryParam(request, 'tag'); if (tag) filter.tags = tag
-    const db = await connectDb(); const collection = db.collection('opportunities'); const total = await collection.countDocuments(filter)
-    const data = await collection.find(filter).sort({ createdAt: -1 }).skip(pagination.skip).limit(pagination.limit).toArray()
-    return NextResponse.json(successResponse(createPaginatedResponse(serialize(data), pagination.page, pagination.limit, total)))
-  } catch (error) { return handleApiError(error) }
+    const page = Number(queryParam(request, 'page', '1'));
+    const limit = Number(queryParam(request, 'limit', '20'));
+    const pagination = getPaginationParams(page, limit);
+
+    const filter: Record<string, unknown> = {};
+    const mine = queryParam(request, 'mine');
+    const createdBy = queryParam(request, 'createdBy');
+
+    if (mine === 'true') {
+      const auth = await requireAuth(request);
+      filter.createdBy = auth.userId;
+    } else if (createdBy) {
+      filter.createdBy = createdBy;
+    } else {
+      filter.status = 'open';
+      filter.deadline = { $gte: new Date() };
+    }
+
+    const tag = queryParam(request, 'tag') || queryParam(request, 'category');
+    if (tag && tag !== 'All') {
+      filter.$or = [
+        { tags: tag },
+        { category: { $regex: tag, $options: 'i' } }
+      ];
+    }
+
+    const search = queryParam(request, 'search');
+    if (search && search.trim()) {
+      const searchRegex = { $regex: search.trim(), $options: 'i' };
+      filter.$or = [
+        ...(Array.isArray(filter.$or) ? (filter.$or as unknown[]) : []),
+        { title: searchRegex },
+        { description: searchRegex },
+        { category: searchRegex },
+        { city: searchRegex },
+      ];
+    }
+
+    const city = queryParam(request, 'city');
+    if (city && city.trim()) {
+      filter.$and = [
+        ...(Array.isArray(filter.$and) ? (filter.$and as unknown[]) : []),
+        {
+          $or: [
+            { city: { $regex: city.trim(), $options: 'i' } },
+            { 'location.city': { $regex: city.trim(), $options: 'i' } }
+          ]
+        }
+      ];
+    }
+
+    const db = await connectDb();
+    const collection = db.collection('opportunities');
+    const total = await collection.countDocuments(filter);
+    const data = await collection.find(filter).sort({ createdAt: -1 }).skip(pagination.skip).limit(pagination.limit).toArray();
+
+    return NextResponse.json(successResponse(createPaginatedResponse(serialize(data), pagination.page, pagination.limit, total)));
+  } catch (error) { return handleApiError(error); }
 }
 
 export async function POST(request: NextRequest) {
