@@ -10,7 +10,7 @@ export async function GET(
     const { filename } = await params
     const { buffer, mimeType } = await getStoredFile(filename)
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         'Content-Type': mimeType,
