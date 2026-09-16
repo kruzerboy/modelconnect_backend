@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { connectDb } from '@/lib/db'
 import { requireAuth, handleApiError } from '@/lib/middleware'
 import { successResponse } from '@/lib/api-response'
-import { queryParam, serialize, objectId } from '@/lib/route-utils'
+import { queryParam, serialize } from '@/lib/route-utils'
+import { enrichApplication } from '@/lib/helpers'
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,36 +26,9 @@ export async function GET(request: NextRequest) {
       applications = await db.collection('applications').find(filter).sort({ createdAt: -1 }).toArray()
     }
 
-    // Enrich applications with Opportunity and Model/Business info
+    // Enrich applications with full Opportunity and Model/Business details
     const enriched = await Promise.all(
-      applications.map(async (app) => {
-        let oppDoc = null
-        try {
-          oppDoc = await db.collection('opportunities').findOne({ _id: objectId(app.opportunityId) })
-        } catch {
-          // Fallback if not valid ObjectId
-        }
-
-        const modelUser = await db.collection('users').findOne({ _id: objectId(app.userId) })
-        const modelProfile = await db.collection('modelProfiles').findOne({ userId: app.userId })
-
-        return {
-          ...app,
-          opportunityTitle: oppDoc?.title || 'Photoshoot',
-          opportunityCategory: oppDoc?.category || oppDoc?.type || 'Fashion',
-          opportunityBudgetMin: oppDoc?.budget?.min ?? oppDoc?.budgetMin ?? 2000,
-          opportunityBudgetMax: oppDoc?.budget?.max ?? oppDoc?.budgetMax ?? 5000,
-          currency: oppDoc?.budget?.currency ?? oppDoc?.currency ?? 'INR',
-          engagementType: oppDoc?.engagement_type ?? oppDoc?.engagementType ?? 'hourly',
-          date: oppDoc?.date,
-          city: oppDoc?.location?.city ?? oppDoc?.city ?? '',
-          address: oppDoc?.location?.address ?? oppDoc?.address ?? '',
-          modelName: modelUser ? `${modelUser.firstName} ${modelUser.lastName}`.trim() : (app.modelName || 'Model Talent'),
-          modelAvatar: modelProfile?.portfolio?.[0] || app.modelAvatar,
-          modelSpecialties: modelProfile?.specialties || app.modelSpecialties || [],
-          modelRating: modelProfile?.rating || 5.0,
-        }
-      })
+      applications.map((app) => enrichApplication(db, app))
     )
 
     return NextResponse.json(successResponse(serialize(enriched)))

@@ -33,6 +33,32 @@ export async function POST(request: NextRequest) {
           createdAt: now,
           updatedAt: now,
         })
+      } else if (input.role === 'camera') {
+        const name = `${input.firstName} ${input.lastName}`.trim() || 'Camera Videographer'
+        await db.collection('modelProfiles').insertOne({
+          userId,
+          name,
+          email,
+          bio: 'Professional Camera Operator & Videographer. Providing 4K/6K cinema camera, lenses, gimbal, and creative filming.',
+          specialties: ['Cinematography', 'Camera Operator', 'Commercial Video', 'Reels & Promos'],
+          location: { city: '', country: '' },
+          roleTag: 'camera',
+          createdAt: now,
+          updatedAt: now,
+        })
+      } else if (input.role === 'drone') {
+        const name = `${input.firstName} ${input.lastName}`.trim() || 'Drone Operator'
+        await db.collection('modelProfiles').insertOne({
+          userId,
+          name,
+          email,
+          bio: 'Certified Drone Pilot & Aerial Cinematographer. Specializing in 4K aerial shots, landscape, architecture, and FPV cinematography.',
+          specialties: ['Drone Cinematography', 'Aerial Pilot', 'DGCA Certified', 'Commercial Aerials'],
+          location: { city: '', country: '' },
+          roleTag: 'drone',
+          createdAt: now,
+          updatedAt: now,
+        })
       } else {
         const name = `${input.firstName} ${input.lastName}`.trim() || 'Model Talent'
         await db.collection('modelProfiles').insertOne({
@@ -42,10 +68,12 @@ export async function POST(request: NextRequest) {
           bio: '',
           specialties: [],
           location: { city: '', country: '' },
+          roleTag: 'model',
           createdAt: now,
           updatedAt: now,
         })
       }
+
 
       return NextResponse.json(successResponse({ user: serialize({ _id: result.insertedId, ...user, passwordHash: undefined }), accessToken: await createAccessToken(userId, user.role), refreshToken: await createRefreshToken(userId) }), { status: 201 })
     } catch (error) { handleDuplicate(error) }

@@ -16,13 +16,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!app) throw new ApiError(ERROR_CODES.NOT_FOUND, 404, 'Application not found')
 
     const opp = await db.collection('opportunities').findOne({ _id: objectId(app.opportunityId) })
-    if (opp && opp.createdBy !== auth.userId && auth.role !== 'admin') {
-      throw new ApiError(ERROR_CODES.FORBIDDEN, 403, 'Only the opportunity creator can update application status')
-    }
-
     const body = await request.json()
     const { status } = body
     if (!status) throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'Status is required')
+
+    const isCreator = opp && opp.createdBy === auth.userId
+    const isApplicant = app.userId === auth.userId
+    const isAdmin = auth.role === 'admin'
+    const isProgressOrComplete = status === 'in_progress' || status === 'completed'
+
+    if (!isCreator && !isAdmin) {
+      if (!isApplicant || !isProgressOrComplete) {
+        throw new ApiError(ERROR_CODES.FORBIDDEN, 403, 'You do not have permission to update this application status')
+      }
+    }
 
     const now = new Date()
     await db.collection('applications').updateOne(
@@ -30,22 +37,43 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       { $set: { status, updatedAt: now } }
     )
 
-    // Notify model on status update
-    if (status === 'accepted' || status === 'shortlisted') {
-      const opp = await db.collection('opportunities').findOne({ _id: objectId(app.opportunityId) })
-      await createNotification(
-        db,
-        app.userId,
-        status === 'accepted' ? 'booking_confirmed' : 'application_shortlisted',
-        status === 'accepted' ? 'Application Accepted! Shoot Booked' : 'Application Shortlisted',
-        `Your application for "${opp?.title || 'Photoshoot'}" has been ${status}.`,
-        { opportunityId: app.opportunityId, applicationId: id }
-      )
+    // Notify counterpart on status updates
+    const recipientId = auth.userId === app.userId ? (opp?.createdBy || '') : app.userId
+    if (recipientId) {
+      let title = ''
+      let message = ''
+      let type = 'status_update'
+
+      if (status === 'accepted') {
+        title = 'Application Accepted! Shoot Booked'
+        message = `Your application for "${opp?.title || 'Photoshoot'}" has been accepted and booked.`
+        type = 'booking_confirmed'
+      } else if (status === 'shortlisted') {
+        title = 'Application Shortlisted'
+        message = `Your application for "${opp?.title || 'Photoshoot'}" has been shortlisted.`
+        type = 'application_shortlisted'
+      } else if (status === 'in_progress') {
+        title = 'Shoot In Progress'
+        message = `"${opp?.title || 'Photoshoot'}" has been marked as In Progress on set.`
+        type = 'shoot_in_progress'
+      } else if (status === 'completed') {
+        title = 'Shoot Completed'
+        message = `"${opp?.title || 'Photoshoot'}" has been marked as Completed.`
+        type = 'shoot_completed'
+      }
+
+      if (title) {
+        await createNotification(db, recipientId, type, title, message, {
+          opportunityId: app.opportunityId,
+          applicationId: id,
+        })
+      }
     }
 
     const updated = await db.collection('applications').findOne({ _id: appId })
     return NextResponse.json(successResponse(serialize(updated)))
   } catch (error) {
+
     return handleApiError(error)
   }
 }

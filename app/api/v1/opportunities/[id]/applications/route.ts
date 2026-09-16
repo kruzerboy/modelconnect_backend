@@ -3,7 +3,7 @@ import { connectDb } from '@/lib/db'
 import { applicationSchema } from '@/lib/schemas'
 import { requireAuth, handleApiError } from '@/lib/middleware'
 import { ApiError, ERROR_CODES, successResponse } from '@/lib/api-response'
-import { createNotification } from '@/lib/helpers'
+import { createNotification, enrichApplication } from '@/lib/helpers'
 import { objectId, parseBody, serialize } from '@/lib/route-utils'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -27,6 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!opportunity) throw new ApiError(ERROR_CODES.NOT_FOUND, 404, 'Opportunity not found')
     if (opportunity.createdBy !== auth.userId && auth.role !== 'admin') throw new ApiError(ERROR_CODES.FORBIDDEN, 403, 'You cannot view these applications')
     const data = await db.collection('applications').find({ opportunityId: id }).sort({ createdAt: -1 }).toArray()
-    return NextResponse.json(successResponse(serialize(data)))
+    const enriched = await Promise.all(data.map((app) => enrichApplication(db, app)))
+    return NextResponse.json(successResponse(serialize(enriched)))
   } catch (error) { return handleApiError(error) }
 }

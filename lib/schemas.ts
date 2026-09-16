@@ -4,8 +4,8 @@ import { z } from 'zod'
 export const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum(['model', 'business'], {
-    message: 'Role must be either "model" or "business"',
+  role: z.enum(['model', 'business', 'camera', 'drone'], {
+    message: 'Role must be "model", "business", "camera", or "drone"',
   }),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
@@ -120,7 +120,11 @@ export const opportunitySchema = z.object({
   preferredComplexion: z.string().optional().nullable(),
   preferredAgeMin: z.number().optional().nullable(),
   preferredAgeMax: z.number().optional().nullable(),
+  clothType: z.string().optional().nullable(),
+  clothesProvidedByOwner: z.boolean().optional().nullable(),
+  wardrobeNote: z.string().optional().nullable(),
 }).passthrough()
+
 
 // Application schema
 export const applicationSchema = z.object({

@@ -14,19 +14,19 @@ export async function GET(request: NextRequest) {
       $or: [{ modelId: auth.userId }, { businessId: auth.userId }, { createdBy: auth.userId }]
     }).toArray()
 
-    // 2. Shoots derived from accepted applications
+    // 2. Shoots derived from accepted/active applications
     let acceptedApps = []
-    if (auth.role === 'model') {
+    if (auth.role !== 'business') {
       acceptedApps = await db.collection('applications').find({
         userId: auth.userId,
-        status: { $in: ['accepted', 'booked', 'hired', 'confirmed'] }
+        status: { $in: ['accepted', 'booked', 'hired', 'confirmed', 'in_progress', 'completed'] }
       }).toArray()
     } else {
       const opps = await db.collection('opportunities').find({ createdBy: auth.userId }).toArray()
       const oppIds = opps.map((o) => o._id.toString())
       acceptedApps = await db.collection('applications').find({
         opportunityId: { $in: oppIds },
-        status: { $in: ['accepted', 'booked', 'hired', 'confirmed'] }
+        status: { $in: ['accepted', 'booked', 'hired', 'confirmed', 'in_progress', 'completed'] }
       }).toArray()
     }
 
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
           title: opp?.title || 'Brand Campaign Shoot',
           category: opp?.category || opp?.type || 'Campaign',
           businessName: businessProfile?.companyName || (businessUser ? `${businessUser.firstName} ${businessUser.lastName}` : 'Studio Partner'),
-          modelName: modelUser ? `${modelUser.firstName} ${modelUser.lastName}` : (app.modelName || 'Model'),
+          modelName: modelUser ? `${modelUser.firstName} ${modelUser.lastName}` : (app.modelName || 'Model / Talent'),
           modelAvatar: modelProfile?.portfolio?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
           date: shootDate.toISOString(),
           startTime: opp?.start_time || opp?.startTime || '10:00',
@@ -60,9 +60,12 @@ export async function GET(request: NextRequest) {
           agreedRate: app.proposedPrice || opp?.budget?.min || 15000,
           currency: opp?.budget?.currency || opp?.currency || 'INR',
           engagementType: opp?.engagement_type || opp?.engagementType || 'daily',
-          status: 'confirmed',
-          callSheetNotes: opp?.additional_requirements || 'Please arrive 15 minutes before call time with clean makeup base.',
-          isPaid: false,
+          status: app.status === 'in_progress' ? 'in_progress' : (app.status === 'completed' ? 'completed' : 'confirmed'),
+          callSheetNotes: opp?.additional_requirements || 'Please arrive 15 minutes before call time.',
+          clothType: opp?.clothType,
+          clothesProvidedByOwner: opp?.clothesProvidedByOwner,
+          wardrobeNote: opp?.wardrobeNote,
+          isPaid: app.status === 'completed',
         }
       })
     )
