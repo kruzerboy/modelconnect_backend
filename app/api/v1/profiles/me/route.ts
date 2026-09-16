@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
             updatedAt: now,
           }
       await db.collection(collection).insertOne(defaultProfile)
-      profile = defaultProfile
+      profile = await db.collection(collection).findOne({ userId: auth.userId })
     }
     return NextResponse.json(successResponse(serialize(profile)))
   } catch (error) { return handleApiError(error) }
