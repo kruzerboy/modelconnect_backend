@@ -6,6 +6,17 @@ import { parseBody, serialize } from '@/lib/route-utils'
 import { ApiError, ERROR_CODES, successResponse } from '@/lib/api-response'
 import { handleApiError } from '@/lib/middleware'
 
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+    },
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const input = await parseBody(request, loginSchema)
