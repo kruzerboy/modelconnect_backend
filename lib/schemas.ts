@@ -27,28 +27,41 @@ export const passwordResetSchema = z.object({
 
 // Profile schemas
 export const modelProfileSchema = z.object({
+  name: z.string().optional(),
   bio: z.string().max(1000, 'Bio must be at most 1000 characters').optional(),
-  specialties: z.array(z.string()).min(1, 'At least one specialty is required'),
-  experience: z.enum(['beginner', 'intermediate', 'professional', 'expert']),
+  specialties: z.array(z.string()).optional().default([]),
+  experience: z.enum(['beginner', 'intermediate', 'professional', 'expert']).optional().default('intermediate'),
   location: z.object({
-    city: z.string(),
-    country: z.string(),
-  }),
+    city: z.string().optional().default(''),
+    country: z.string().optional().default(''),
+  }).optional().default({ city: '', country: '' }),
   portfolio: z.array(z.string()).optional(),
   socialHandle: z.string().max(100, 'Social media handle must be at most 100 characters').optional(),
+  height: z.string().optional(),
+  eyeColor: z.string().optional(),
+  hairColor: z.string().optional(),
+  measurements: z.string().optional(),
+  shoeSize: z.string().optional(),
+  agency: z.string().optional(),
+  hourlyRate: z.number().optional(),
+  dailyRate: z.number().optional(),
+  projectRate: z.number().optional(),
 })
 
 export const businessProfileSchema = z.object({
-  companyName: z.string().min(1, 'Company name is required'),
-  industry: z.string().min(1, 'Industry is required'),
-  description: z.string().max(1000, 'Description must be at most 1000 characters').optional(),
-  website: z.string().url('Invalid website URL').optional().or(z.literal('')),
+  companyName: z.string().optional().default('Business Account'),
+  email: z.string().email().optional().or(z.literal('')),
+  industry: z.string().optional().default(''),
+  description: z.string().max(1000, 'Description must be at most 1000 characters').optional().default(''),
+  website: z.string().optional().default(''),
   location: z.object({
-    city: z.string(),
-    country: z.string(),
-  }),
-  socialHandle: z.string().max(100, 'Social media handle must be at most 100 characters').optional(),
-  logoUrl: z.string().optional(),
+    city: z.string().optional().default(''),
+    country: z.string().optional().default(''),
+  }).optional().default({ city: '', country: '' }),
+  city: z.string().optional(),
+  country: z.string().optional(),
+  socialHandle: z.string().max(100, 'Social media handle must be at most 100 characters').optional().nullable(),
+  logoUrl: z.string().optional().nullable(),
 })
 
 // Pricing schema
@@ -82,8 +95,10 @@ export const opportunitySchema = z.object({
     city: z.string(),
     country: z.string(),
   }).optional(),
+  category: z.string().optional(),
   tags: z.array(z.string()).optional(),
   requirements: z.array(z.string()).optional(),
+  productionServices: z.array(z.string()).optional(),
   durationDays: z.number().int().positive('Duration must be positive').optional(),
 })
 

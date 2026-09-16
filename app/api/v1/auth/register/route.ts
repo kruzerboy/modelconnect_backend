@@ -18,6 +18,35 @@ export async function POST(request: NextRequest) {
     try {
       const result = await db.collection('users').insertOne(user)
       const userId = result.insertedId.toString()
+
+      // Auto-create initial profile for the new user
+      if (input.role === 'business') {
+        const companyName = `${input.firstName} ${input.lastName}`.trim() || 'Business Account'
+        await db.collection('businessProfiles').insertOne({
+          userId,
+          companyName,
+          email,
+          industry: '',
+          description: '',
+          website: '',
+          location: { city: '', country: '' },
+          createdAt: now,
+          updatedAt: now,
+        })
+      } else {
+        const name = `${input.firstName} ${input.lastName}`.trim() || 'Model Talent'
+        await db.collection('modelProfiles').insertOne({
+          userId,
+          name,
+          email,
+          bio: '',
+          specialties: [],
+          location: { city: '', country: '' },
+          createdAt: now,
+          updatedAt: now,
+        })
+      }
+
       return NextResponse.json(successResponse({ user: serialize({ _id: result.insertedId, ...user, passwordHash: undefined }), accessToken: await createAccessToken(userId, user.role), refreshToken: await createRefreshToken(userId) }), { status: 201 })
     } catch (error) { handleDuplicate(error) }
   } catch (error) { return handleApiError(error) }

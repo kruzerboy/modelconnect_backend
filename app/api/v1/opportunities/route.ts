@@ -28,9 +28,12 @@ export async function GET(request: NextRequest) {
 
     const tag = queryParam(request, 'tag') || queryParam(request, 'category');
     if (tag && tag !== 'All') {
+      const regex = { $regex: tag, $options: 'i' };
       filter.$or = [
         { tags: tag },
-        { category: { $regex: tag, $options: 'i' } }
+        { category: regex },
+        { productionServices: regex },
+        { requirements: regex },
       ];
     }
 

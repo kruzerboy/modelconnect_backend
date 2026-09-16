@@ -3,7 +3,7 @@ import { connectDb } from '@/lib/db'
 import { businessProfileSchema, modelProfileSchema } from '@/lib/schemas'
 import { requireAuth, handleApiError } from '@/lib/middleware'
 import { ApiError, ERROR_CODES, successResponse } from '@/lib/api-response'
-import { parseBody, serialize } from '@/lib/route-utils'
+import { parseBody, serialize, objectId } from '@/lib/route-utils'
 
 export async function PUT(request: NextRequest) {
   try {
@@ -26,9 +26,39 @@ export async function PUT(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireAuth(request); const db = await connectDb(); const collection = auth.role === 'model' ? 'modelProfiles' : 'businessProfiles'
-    const profile = await db.collection(collection).findOne({ userId: auth.userId })
-    if (!profile) throw new ApiError(ERROR_CODES.NOT_FOUND, 404, 'Profile not found')
+    const auth = await requireAuth(request)
+    const db = await connectDb()
+    const collection = auth.role === 'model' ? 'modelProfiles' : 'businessProfiles'
+    let profile = await db.collection(collection).findOne({ userId: auth.userId })
+    if (!profile) {
+      const user = await db.collection('users').findOne({ _id: objectId(auth.userId) })
+      const now = new Date()
+      const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : ''
+      const defaultProfile = auth.role === 'model'
+        ? {
+            userId: auth.userId,
+            name: fullName || 'Model Talent',
+            email: user?.email || '',
+            bio: '',
+            specialties: [],
+            location: { city: '', country: '' },
+            createdAt: now,
+            updatedAt: now,
+          }
+        : {
+            userId: auth.userId,
+            companyName: fullName || 'Business Account',
+            email: user?.email || '',
+            industry: '',
+            description: '',
+            website: '',
+            location: { city: '', country: '' },
+            createdAt: now,
+            updatedAt: now,
+          }
+      await db.collection(collection).insertOne(defaultProfile)
+      profile = defaultProfile
+    }
     return NextResponse.json(successResponse(serialize(profile)))
   } catch (error) { return handleApiError(error) }
 }
