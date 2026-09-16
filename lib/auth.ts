@@ -29,7 +29,7 @@ export async function createAccessToken(userId: string, role: string): Promise<s
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('15m')
+    .setExpirationTime('24h')
     .sign(key)
 
   return token
