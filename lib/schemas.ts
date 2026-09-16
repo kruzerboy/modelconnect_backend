@@ -46,7 +46,7 @@ export const modelProfileSchema = z.object({
   hourlyRate: z.number().optional(),
   dailyRate: z.number().optional(),
   projectRate: z.number().optional(),
-})
+}).passthrough()
 
 export const businessProfileSchema = z.object({
   companyName: z.string().optional().default('Business Account'),
@@ -62,7 +62,7 @@ export const businessProfileSchema = z.object({
   country: z.string().optional(),
   socialHandle: z.string().max(100, 'Social media handle must be at most 100 characters').optional().nullable(),
   logoUrl: z.string().optional().nullable(),
-})
+}).passthrough()
 
 // Pricing schema
 export const pricingSchema = z.object({
@@ -74,8 +74,8 @@ export const pricingSchema = z.object({
 
 // Availability schema
 export const availabilitySchema = z.object({
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
+  startDate: z.string(),
+  endDate: z.string(),
   hoursPerWeek: z.number().int().min(0).max(168),
   type: z.enum(['available', 'unavailable']),
 })
@@ -84,23 +84,34 @@ export const availabilitySchema = z.object({
 export const opportunitySchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   description: z.string().min(1, 'Description is required'),
-  type: z.enum(['shoot', 'campaign', 'test', 'collaboration', 'other']),
+  type: z.enum(['shoot', 'campaign', 'test', 'collaboration', 'other']).default('shoot'),
   budget: z.object({
     min: z.number().positive('Min budget must be positive'),
     max: z.number().positive('Max budget must be positive'),
-    currency: z.string().length(3),
+    currency: z.string().length(3).default('INR'),
   }),
-  deadline: z.string().datetime(),
+  deadline: z.string(),
+  businessName: z.string().optional(),
+  city: z.string().optional(),
+  address: z.string().optional(),
+  engagement_type: z.string().optional(),
+  date: z.string().optional(),
+  start_time: z.string().optional(),
+  end_time: z.string().optional(),
+  duration_minutes: z.number().optional(),
+  models_required: z.number().optional(),
   location: z.object({
-    city: z.string(),
-    country: z.string(),
+    city: z.string().optional().default(''),
+    country: z.string().optional().default(''),
   }).optional(),
   category: z.string().optional(),
   tags: z.array(z.string()).optional(),
   requirements: z.array(z.string()).optional(),
+  additional_requirements: z.string().optional(),
+  production_services: z.array(z.string()).optional(),
   productionServices: z.array(z.string()).optional(),
   durationDays: z.number().int().positive('Duration must be positive').optional(),
-})
+}).passthrough()
 
 // Application schema
 export const applicationSchema = z.object({

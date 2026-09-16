@@ -15,6 +15,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const app = await db.collection('applications').findOne({ _id: appId })
     if (!app) throw new ApiError(ERROR_CODES.NOT_FOUND, 404, 'Application not found')
 
+    const opp = await db.collection('opportunities').findOne({ _id: objectId(app.opportunityId) })
+    if (opp && opp.createdBy !== auth.userId && auth.role !== 'admin') {
+      throw new ApiError(ERROR_CODES.FORBIDDEN, 403, 'Only the opportunity creator can update application status')
+    }
+
     const body = await request.json()
     const { status } = body
     if (!status) throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'Status is required')

@@ -47,12 +47,12 @@ export async function GET(request: NextRequest) {
           currency: oppDoc?.budget?.currency ?? oppDoc?.currency ?? 'INR',
           engagementType: oppDoc?.engagement_type ?? oppDoc?.engagementType ?? 'hourly',
           date: oppDoc?.date,
-          city: oppDoc?.location?.city ?? oppDoc?.city ?? 'Mumbai',
-          address: oppDoc?.location?.address ?? oppDoc?.address ?? 'Studio',
-          modelName: modelUser ? `${modelUser.firstName} ${modelUser.lastName}` : (app.modelName || 'Model'),
+          city: oppDoc?.location?.city ?? oppDoc?.city ?? '',
+          address: oppDoc?.location?.address ?? oppDoc?.address ?? '',
+          modelName: modelUser ? `${modelUser.firstName} ${modelUser.lastName}`.trim() : (app.modelName || 'Model Talent'),
           modelAvatar: modelProfile?.portfolio?.[0] || app.modelAvatar,
-          modelSpecialties: modelProfile?.specialties || app.modelSpecialties || ['Editorial'],
-          modelRating: modelProfile?.rating || 4.9,
+          modelSpecialties: modelProfile?.specialties || app.modelSpecialties || [],
+          modelRating: modelProfile?.rating || 5.0,
         }
       })
     )
