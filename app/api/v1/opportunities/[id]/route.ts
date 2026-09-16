@@ -17,8 +17,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const enriched = {
       ...opp,
-      businessName: business?.companyName || (user ? `${user.firstName} ${user.lastName}` : 'Studio'),
-      businessLogo: business?.logoUrl,
+      businessName: business?.companyName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '') || opp.businessName || 'Business Account',
+      businessLogo: business?.logoUrl || opp.businessLogo,
     }
 
     return NextResponse.json(successResponse(serialize(enriched)))

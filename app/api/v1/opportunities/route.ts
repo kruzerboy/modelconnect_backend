@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
         { tags: tag },
         { category: regex },
         { productionServices: regex },
+        { production_services: regex },
         { requirements: regex },
       ];
     }

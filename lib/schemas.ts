@@ -111,6 +111,14 @@ export const opportunitySchema = z.object({
   production_services: z.array(z.string()).optional(),
   productionServices: z.array(z.string()).optional(),
   durationDays: z.number().int().positive('Duration must be positive').optional(),
+  contactPersonName: z.string().optional(),
+  contactPersonDesignation: z.string().optional(),
+  verificationUrl: z.string().optional(),
+  customGearDetails: z.string().optional(),
+  preferredGender: z.string().optional(),
+  preferredComplexion: z.string().optional(),
+  preferredAgeMin: z.number().optional(),
+  preferredAgeMax: z.number().optional(),
 }).passthrough()
 
 // Application schema
