@@ -19,3 +19,7 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: SMTP_FROM
+        value: ModelConnect <onboarding@resend.dev>
