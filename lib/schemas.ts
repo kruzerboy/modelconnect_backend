@@ -21,8 +21,12 @@ export const passwordResetRequestSchema = z.object({
 })
 
 export const passwordResetSchema = z.object({
-  token: z.string().min(1, 'Reset token is required'),
+  email: z.string().email('Invalid email address').optional(),
+  otp: z.string().min(4, 'Verification code is required').optional(),
+  token: z.string().optional(),
   newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+}).refine((data) => Boolean(data.token || (data.email && data.otp)), {
+  message: 'Either a reset token or email and OTP code are required',
 })
 
 // Profile schemas

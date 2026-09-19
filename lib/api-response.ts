@@ -1,5 +1,6 @@
 export interface ApiSuccessResponse<T = any> {
   success: true
+  message?: string
   data: T
   timestamp: string
 }
@@ -16,9 +17,10 @@ export interface ApiErrorResponse {
 
 export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse
 
-export function successResponse<T>(data: T): ApiSuccessResponse<T> {
+export function successResponse<T>(data: T, message?: string): ApiSuccessResponse<T> {
   return {
     success: true,
+    ...(message ? { message } : {}),
     data,
     timestamp: new Date().toISOString(),
   }

@@ -75,6 +75,10 @@ async function createIndexes(db: Db) {
   // Notifications
   await db.collection('notifications').createIndex({ userId: 1, createdAt: -1 })
   await db.collection('notifications').createIndex({ userId: 1, read: 1 })
+
+  // Password Resets
+  await db.collection('passwordResets').createIndex({ email: 1 })
+  await db.collection('passwordResets').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 }
 
 export function getDb(): Db {
