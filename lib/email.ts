@@ -37,7 +37,49 @@ export async function sendPasswordResetEmail({
     </div>
   `
 
-  // 1. Check if Resend API key is provided
+  // 1. Check if SMTP configuration exists (e.g. Gmail SMTP)
+  if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
+    try {
+      // @ts-ignore
+      const nodemailerModule = await import('nodemailer')
+      const cleanPass = env.SMTP_PASS.replace(/\s+/g, '')
+      const isGmail = env.SMTP_HOST.toLowerCase().includes('gmail')
+
+      const transporter = nodemailerModule.createTransport(
+        isGmail
+          ? {
+              service: 'gmail',
+              auth: {
+                user: env.SMTP_USER,
+                pass: cleanPass,
+              },
+            }
+          : {
+              host: env.SMTP_HOST,
+              port: parseInt(env.SMTP_PORT || '587', 10),
+              secure: env.SMTP_PORT === '465',
+              auth: {
+                user: env.SMTP_USER,
+                pass: cleanPass,
+              },
+            }
+      )
+
+      await transporter.sendMail({
+        from: env.SMTP_FROM || `"ModelConnect" <${env.SMTP_USER}>`,
+        to,
+        subject,
+        html,
+      })
+
+      console.log(`[SMTP] Successfully sent password reset email to ${to} via ${env.SMTP_HOST}`)
+      return { success: true, message: 'Password reset email sent successfully.' }
+    } catch (err) {
+      console.error('[SMTP Error] Failed to send email via SMTP:', err)
+    }
+  }
+
+  // 2. Fallback to Resend API if provided
   if (env.RESEND_API_KEY) {
     try {
       const fromEmail = env.SMTP_FROM || 'ModelConnect <onboarding@resend.dev>'
@@ -64,34 +106,6 @@ export async function sendPasswordResetEmail({
       console.error(`[Resend Error] Status: ${res.status}, Body: ${errorText}`)
     } catch (err) {
       console.error('[Resend Exception] Failed to send email via Resend:', err)
-    }
-  }
-
-  // 2. Check if SMTP configuration exists and try nodemailer dynamically
-  if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
-    try {
-      // Dynamic import to avoid build errors when nodemailer isn't installed
-      const nodemailerModule = await import('nodemailer' as string)
-      const transporter = nodemailerModule.createTransport({
-        host: env.SMTP_HOST,
-        port: parseInt(env.SMTP_PORT || '587', 10),
-        secure: env.SMTP_PORT === '465',
-        auth: {
-          user: env.SMTP_USER,
-          pass: env.SMTP_PASS,
-        },
-      })
-
-      await transporter.sendMail({
-        from: env.SMTP_FROM || `"ModelConnect" <${env.SMTP_USER}>`,
-        to,
-        subject,
-        html,
-      })
-
-      return { success: true, message: 'Password reset email sent successfully.' }
-    } catch (err) {
-      console.warn('Failed to send email via SMTP nodemailer:', err)
     }
   }
 
