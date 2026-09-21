@@ -88,6 +88,8 @@ export const availabilitySchema = z.object({
 export const opportunitySchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   description: z.string().min(1, 'Description is required'),
+  targetRole: z.enum(['model', 'camera', 'drone']).optional().default('model'),
+  target_role: z.enum(['model', 'camera', 'drone']).optional(),
   type: z.enum(['shoot', 'campaign', 'test', 'collaboration', 'other']).default('shoot'),
   budget: z.object({
     min: z.number().positive('Min budget must be positive'),
