@@ -128,44 +128,72 @@ export function calculateDiscoveryScore(profile: any): number {
 
 // Application Enrichment for candidates and opportunities
 export async function enrichApplication(db: any, app: any) {
-  const safeId = (id: any) => (id && typeof id === 'string' && ObjectId.isValid(id) && id.length === 24 ? new ObjectId(id) : null)
+  const safeId = (id: any) => {
+    if (!id) return null
+    if (typeof id === 'object' && id instanceof ObjectId) return id
+    const str = String(id)
+    if (ObjectId.isValid(str) && str.length === 24) return new ObjectId(str)
+    return null
+  }
+  const toStr = (id: any) => (id ? String(id) : '')
 
-  let oppDoc = null
-  const oppObjectId = safeId(app.opportunityId)
-  if (oppObjectId) {
-    oppDoc = await db.collection('opportunities').findOne({ _id: oppObjectId })
-  }
-  if (!oppDoc) {
-    oppDoc = await db.collection('opportunities').findOne({ $or: [{ _id: app.opportunityId }, { id: app.opportunityId }] })
+  // 1. Resolve Opportunity
+  const oppObjId = safeId(app.opportunityId)
+  const oppStr = toStr(app.opportunityId)
+  const oppQueries: any[] = []
+  if (oppObjId) oppQueries.push({ _id: oppObjId }, { id: oppObjId })
+  if (oppStr) oppQueries.push({ _id: oppStr }, { id: oppStr })
+  const oppDoc = oppQueries.length ? await db.collection('opportunities').findOne({ $or: oppQueries }) : null
+
+  // 2. Resolve Candidate User
+  const userObjId = safeId(app.userId)
+  const userStr = toStr(app.userId)
+  const userQueries: any[] = []
+  if (userObjId) userQueries.push({ _id: userObjId }, { userId: userObjId }, { id: userObjId })
+  if (userStr) userQueries.push({ _id: userStr }, { userId: userStr }, { id: userStr })
+
+  const modelUser = userQueries.length ? await db.collection('users').findOne({ $or: userQueries }) : null
+
+  // 3. Resolve Candidate Profile
+  let modelProfile = userQueries.length ? await db.collection('modelProfiles').findOne({ $or: userQueries }) : null
+  if (!modelProfile && userQueries.length) {
+    modelProfile = await db.collection('businessProfiles').findOne({ $or: userQueries })
   }
 
-  let modelUser = null
-  const userObjectId = safeId(app.userId)
-  if (userObjectId) {
-    modelUser = await db.collection('users').findOne({ _id: userObjectId })
-  }
-  if (!modelUser) {
-    modelUser = await db.collection('users').findOne({ $or: [{ _id: app.userId }, { id: app.userId }] })
-  }
-
-  let modelProfile = null
-  if (userObjectId) {
-    modelProfile = await db.collection('modelProfiles').findOne({
-      $or: [{ userId: app.userId }, { _id: userObjectId }]
-    })
-  } else {
-    modelProfile = await db.collection('modelProfiles').findOne({ userId: app.userId })
+  // 4. Resolve Candidate Portfolio & Avatar
+  let portfolioList: string[] = []
+  if (Array.isArray(modelProfile?.portfolio)) {
+    portfolioList = modelProfile.portfolio.map((x: any) => String(x)).filter((s: string) => s.trim().length > 0)
+  } else if (Array.isArray(modelUser?.portfolio)) {
+    portfolioList = modelUser.portfolio.map((x: any) => String(x)).filter((s: string) => s.trim().length > 0)
   }
 
+  const resolvedAvatar =
+    modelProfile?.portfolio?.[0] ||
+    modelProfile?.avatar ||
+    modelProfile?.profilePicture ||
+    modelProfile?.avatarUrl ||
+    modelProfile?.image ||
+    modelUser?.avatarUrl ||
+    modelUser?.avatar ||
+    modelUser?.profilePicture ||
+    app.modelAvatar ||
+    null
+
+  if (portfolioList.length === 0 && resolvedAvatar) {
+    portfolioList = [resolvedAvatar]
+  }
+
+  // 5. Resolve Business User
   let businessUser = null
-  if (oppDoc?.createdBy) {
-    const bizObjectId = safeId(oppDoc.createdBy)
-    if (bizObjectId) {
-      businessUser = await db.collection('users').findOne({ _id: bizObjectId })
-    }
-    if (!businessUser) {
-      businessUser = await db.collection('users').findOne({ $or: [{ _id: oppDoc.createdBy }, { id: oppDoc.createdBy }] })
-    }
+  if (oppDoc?.createdBy || oppDoc?.businessOwnerId) {
+    const bizId = oppDoc.createdBy || oppDoc.businessOwnerId
+    const bizObjId = safeId(bizId)
+    const bizStr = toStr(bizId)
+    const bizQueries: any[] = []
+    if (bizObjId) bizQueries.push({ _id: bizObjId })
+    if (bizStr) bizQueries.push({ _id: bizStr }, { id: bizStr })
+    businessUser = bizQueries.length ? await db.collection('users').findOne({ $or: bizQueries }) : null
   }
 
   const modelFullName = modelProfile?.name ||
@@ -177,15 +205,15 @@ export async function enrichApplication(db: any, app: any) {
     ...app,
     // Candidate details for Owner
     modelName: modelFullName,
-    modelAvatar: modelProfile?.portfolio?.[0] || modelProfile?.avatar || app.modelAvatar || null,
+    modelAvatar: resolvedAvatar,
     modelBio: modelProfile?.bio || '',
     modelCity: modelProfile?.location?.city || modelProfile?.city || '',
     modelGender: modelProfile?.gender || '',
     modelHeight: modelProfile?.height || '',
     modelSpecialties: modelProfile?.specialties || app.modelSpecialties || [],
-    modelPortfolio: modelProfile?.portfolio || [],
+    modelPortfolio: portfolioList,
     modelRating: modelProfile?.rating || 4.9,
-    modelInstagram: modelProfile?.instagram || modelProfile?.socialHandles?.instagram || '',
+    modelInstagram: modelProfile?.instagram || modelProfile?.socialHandles?.instagram || modelProfile?.socialHandle || '',
     modelPhone: modelUser?.phone || modelProfile?.phone || '',
     modelEmail: modelUser?.email || modelProfile?.email || '',
 
