@@ -168,16 +168,30 @@ export async function enrichApplication(db: any, app: any) {
     portfolioList = modelUser.portfolio.map((x: any) => String(x)).filter((s: string) => s.trim().length > 0)
   }
 
+  // Sort portfolio so real network URLs (http/https) take precedence over stale device local paths (/data/user/0...)
+  portfolioList.sort((a, b) => {
+    const aIsNet = a.startsWith('http://') || a.startsWith('https://') ? 1 : 0
+    const bIsNet = b.startsWith('http://') || b.startsWith('https://') ? 1 : 0
+    return bIsNet - aIsNet
+  })
+
+  // Candidates for avatar in priority order
+  const avatarCandidates = [
+    modelProfile?.avatar,
+    modelProfile?.profilePicture,
+    modelProfile?.avatarUrl,
+    modelProfile?.image,
+    modelUser?.avatarUrl,
+    modelUser?.avatar,
+    modelUser?.profilePicture,
+    ...portfolioList,
+    app.modelAvatar,
+  ].filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+
+  // Find first cloud URL if available, otherwise first non-empty candidate
   const resolvedAvatar =
-    modelProfile?.portfolio?.[0] ||
-    modelProfile?.avatar ||
-    modelProfile?.profilePicture ||
-    modelProfile?.avatarUrl ||
-    modelProfile?.image ||
-    modelUser?.avatarUrl ||
-    modelUser?.avatar ||
-    modelUser?.profilePicture ||
-    app.modelAvatar ||
+    avatarCandidates.find((url) => url.startsWith('http://') || url.startsWith('https://')) ||
+    avatarCandidates[0] ||
     null
 
   if (portfolioList.length === 0 && resolvedAvatar) {

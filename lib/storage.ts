@@ -122,13 +122,29 @@ export interface SavedFileInfo {
  * Validates and saves an uploaded file to the persistent external storage folder.
  */
 export async function saveUploadedFile(request: NextRequest, file: File): Promise<SavedFileInfo> {
-  const mimeType = file.type?.toLowerCase() || 'application/octet-stream'
-  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+  let mimeType = file.type?.toLowerCase() || ''
+  let ext = path.extname(file.name || '').toLowerCase()
+  if (!ext || ext.length < 2) {
+    ext = MIME_EXTENSION_MAP[mimeType] || '.jpg'
+  }
+
+  // If MIME type is missing, empty, or generic octet-stream from mobile client, infer from extension
+  if ((!mimeType || mimeType === 'application/octet-stream') && EXTENSION_MIME_MAP[ext]) {
+    mimeType = EXTENSION_MIME_MAP[ext]
+  }
+
+  // Validate allowed mime types or valid image file extensions
+  const isImageExtension = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.gif'].includes(ext)
+  if (!ALLOWED_MIME_TYPES.has(mimeType) && !isImageExtension) {
     throw new ApiError(
       ERROR_CODES.VALIDATION_ERROR,
       400,
-      `Unsupported file type: ${mimeType}. Allowed formats: JPG, PNG, WEBP, HEIC, GIF`
+      `Unsupported file type: ${mimeType || ext}. Allowed formats: JPG, PNG, WEBP, HEIC, GIF`
     )
+  }
+
+  if (isImageExtension && (!mimeType || !ALLOWED_MIME_TYPES.has(mimeType))) {
+    mimeType = EXTENSION_MIME_MAP[ext] || 'image/jpeg'
   }
 
   if (file.size > MAX_FILE_SIZE) {
@@ -154,7 +170,6 @@ export async function saveUploadedFile(request: NextRequest, file: File): Promis
   }
 
   // 2. Fallback to local persistent disk storage
-  let ext = path.extname(file.name || '').toLowerCase()
   if (!ext || ext.length < 2) {
     ext = MIME_EXTENSION_MAP[mimeType] || '.jpg'
   }
