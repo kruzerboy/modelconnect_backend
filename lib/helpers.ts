@@ -82,8 +82,8 @@ export async function createNotification(
   message: string,
   metadata?: Record<string, any>
 ) {
-  return db.collection('notifications').insertOne({
-    _id: new (require('mongodb').ObjectId)(),
+  const result = await db.collection('notifications').insertOne({
+    _id: new ObjectId(),
     userId,
     type,
     title,
@@ -92,6 +92,24 @@ export async function createNotification(
     read: false,
     createdAt: new Date(),
   })
+
+  // Also trigger instant FCM push notification to the user's mobile device
+  try {
+    const { sendUserPushNotification } = await import('@/lib/push-notifications')
+    sendUserPushNotification({
+      userId,
+      title,
+      body: message,
+      data: {
+        type,
+        ...(metadata || {}),
+      },
+    }).catch((pushErr) => console.warn('[FCM] User push delivery error:', pushErr))
+  } catch (importErr) {
+    // Graceful fallback
+  }
+
+  return result
 }
 
 // Discovery score calculation
