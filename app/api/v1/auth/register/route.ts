@@ -14,7 +14,22 @@ export async function POST(request: NextRequest) {
     const existing = await db.collection('users').findOne({ email })
     if (existing) throw new ApiError(ERROR_CODES.CONFLICT, 409, 'An account with this email already exists')
     const now = new Date()
-    const user = { email, passwordHash: await hashPassword(input.password), role: input.role, firstName: input.firstName.trim(), lastName: input.lastName.trim(), status: 'active', createdAt: now, updatedAt: now }
+    const phoneNumber = input.phoneNumber?.trim() || null
+    const socialHandle = input.socialHandle?.trim() || null
+    const firebaseUid = input.firebaseUid?.trim() || null
+    const user = {
+      email,
+      passwordHash: await hashPassword(input.password),
+      role: input.role,
+      firstName: input.firstName.trim(),
+      lastName: input.lastName.trim(),
+      phoneNumber,
+      socialHandle,
+      firebaseUid,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    }
     try {
       const result = await db.collection('users').insertOne(user)
       const userId = result.insertedId.toString()
@@ -26,9 +41,11 @@ export async function POST(request: NextRequest) {
           userId,
           companyName,
           email,
+          phoneNumber,
+          socialHandle,
           industry: '',
           description: '',
-          website: '',
+          website: socialHandle || '',
           location: { city: '', country: '' },
           createdAt: now,
           updatedAt: now,
@@ -39,6 +56,8 @@ export async function POST(request: NextRequest) {
           userId,
           name,
           email,
+          phoneNumber,
+          socialHandle,
           bio: 'Professional Camera Operator & Videographer. Providing 4K/6K cinema camera, lenses, gimbal, and creative filming.',
           specialties: ['Cinematography', 'Camera Operator', 'Commercial Video', 'Reels & Promos'],
           location: { city: '', country: '' },
@@ -52,6 +71,8 @@ export async function POST(request: NextRequest) {
           userId,
           name,
           email,
+          phoneNumber,
+          socialHandle,
           bio: 'Certified Drone Pilot & Aerial Cinematographer. Specializing in 4K aerial shots, landscape, architecture, and FPV cinematography.',
           specialties: ['Drone Cinematography', 'Aerial Pilot', 'DGCA Certified', 'Commercial Aerials'],
           location: { city: '', country: '' },
@@ -65,6 +86,8 @@ export async function POST(request: NextRequest) {
           userId,
           name,
           email,
+          phoneNumber,
+          socialHandle,
           bio: '',
           specialties: [],
           location: { city: '', country: '' },

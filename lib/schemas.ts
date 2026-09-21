@@ -9,11 +9,15 @@ export const registerSchema = z.object({
   }),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
+  phoneNumber: z.string().optional().nullable(),
+  socialHandle: z.string().optional().nullable(),
+  firebaseUid: z.string().optional().nullable(),
 })
 
 export const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
+  firebaseUid: z.string().optional().nullable(),
 })
 
 export const passwordResetRequestSchema = z.object({
@@ -90,10 +94,12 @@ export const opportunitySchema = z.object({
   description: z.string().min(1, 'Description is required'),
   targetRole: z.enum(['model', 'camera', 'drone']).optional().default('model'),
   target_role: z.enum(['model', 'camera', 'drone']).optional(),
+  isPriceOnCall: z.boolean().optional(),
+  is_price_on_call: z.boolean().optional(),
   type: z.enum(['shoot', 'campaign', 'test', 'collaboration', 'other']).default('shoot'),
   budget: z.object({
-    min: z.number().positive('Min budget must be positive'),
-    max: z.number().positive('Max budget must be positive'),
+    min: z.number().min(0, 'Min budget must be non-negative'),
+    max: z.number().min(0, 'Max budget must be non-negative'),
     currency: z.string().length(3).default('INR'),
   }),
   deadline: z.string(),
@@ -156,6 +162,11 @@ export const paginationSchema = z.object({
 })
 
 
+export const fcmTokenSchema = z.object({
+  fcmToken: z.string().min(1, 'FCM Token is required'),
+  platform: z.enum(['android', 'ios', 'web', 'unknown']).optional().default('unknown'),
+})
+
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type ModelProfileInput = z.infer<typeof modelProfileSchema>
@@ -166,3 +177,4 @@ export type OpportunityInput = z.infer<typeof opportunitySchema>
 export type ApplicationInput = z.infer<typeof applicationSchema>
 export type MessageInput = z.infer<typeof messageSchema>
 export type PaginationInput = z.infer<typeof paginationSchema>
+export type FcmTokenInput = z.infer<typeof fcmTokenSchema>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDb } from '@/lib/db'
-import { createAccessToken, createRefreshToken, verifyPassword } from '@/lib/auth'
+import { createAccessToken, createRefreshToken, hashPassword, verifyPassword } from '@/lib/auth'
 import { loginSchema } from '@/lib/schemas'
 import { parseBody, serialize } from '@/lib/route-utils'
 import { ApiError, ERROR_CODES, successResponse } from '@/lib/api-response'
@@ -20,10 +20,41 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   try {
     const input = await parseBody(request, loginSchema)
-    const user = await (await connectDb()).collection('users').findOne({ email: input.email.toLowerCase().trim() })
-    if (!user || !(await verifyPassword(input.password, user.passwordHash))) throw new ApiError(ERROR_CODES.INVALID_CREDENTIALS, 401, 'Email or password is incorrect')
+    const email = input.email.toLowerCase().trim()
+    const db = await connectDb()
+    const user = await db.collection('users').findOne({ email })
+    if (!user) {
+      throw new ApiError(ERROR_CODES.INVALID_CREDENTIALS, 401, 'Email or password is incorrect')
+    }
+
+    const isPasswordValid = await verifyPassword(input.password, user.passwordHash)
+    const isFirebaseValid = Boolean(input.firebaseUid && (user.firebaseUid === input.firebaseUid || !user.firebaseUid))
+
+    if (!isPasswordValid && !isFirebaseValid) {
+      throw new ApiError(ERROR_CODES.INVALID_CREDENTIALS, 401, 'Email or password is incorrect')
+    }
+
+    // If verified by Firebase (e.g. user just reset their password via Google email link),
+    // automatically sync the new password hash into MongoDB
+    if (!isPasswordValid && isFirebaseValid) {
+      const newHash = await hashPassword(input.password)
+      await db.collection('users').updateOne(
+        { _id: user._id },
+        { $set: { passwordHash: newHash, firebaseUid: input.firebaseUid, updatedAt: new Date() } }
+      )
+    } else if (input.firebaseUid && !user.firebaseUid) {
+      await db.collection('users').updateOne(
+        { _id: user._id },
+        { $set: { firebaseUid: input.firebaseUid, updatedAt: new Date() } }
+      )
+    }
+
     const userId = user._id.toString()
     const { passwordHash, ...safeUser } = user
-    return NextResponse.json(successResponse({ user: serialize(safeUser), accessToken: await createAccessToken(userId, user.role), refreshToken: await createRefreshToken(userId) }))
+    return NextResponse.json(successResponse({
+      user: serialize(safeUser),
+      accessToken: await createAccessToken(userId, user.role),
+      refreshToken: await createRefreshToken(userId),
+    }))
   } catch (error) { return handleApiError(error) }
 }

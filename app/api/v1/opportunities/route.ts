@@ -5,6 +5,7 @@ import { requireAuth, handleApiError } from '@/lib/middleware'
 import { ApiError, ERROR_CODES, successResponse } from '@/lib/api-response'
 import { parseBody, queryParam, serialize, objectId } from '@/lib/route-utils'
 import { createPaginatedResponse, getPaginationParams } from '@/lib/helpers'
+import { sendRolePushNotification } from '@/lib/push-notifications'
 
 export async function GET(request: NextRequest) {
   try {
@@ -75,14 +76,30 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireAuth(request); if (auth.role !== 'business') throw new ApiError(ERROR_CODES.FORBIDDEN, 403, 'Only businesses can create opportunities')
-    const input = await parseBody(request, opportunitySchema); if (input.budget.max < input.budget.min) throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'Maximum budget must be at least the minimum budget')
+    const input = await parseBody(request, opportunitySchema)
+    const isPriceOnCall = Boolean(input.isPriceOnCall || input.is_price_on_call)
+    if (!isPriceOnCall && input.budget.max < input.budget.min) {
+      throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'Maximum budget must be at least the minimum budget')
+    }
     const deadline = new Date(input.deadline); if (deadline <= new Date()) throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'Deadline must be in the future')
     const db = await connectDb()
     const user = await db.collection('users').findOne({ _id: objectId(auth.userId) })
     const bProfile = await db.collection('businessProfiles').findOne({ userId: auth.userId })
     const resolvedBusinessName = bProfile?.companyName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '') || input.businessName || 'Business Account'
-    const now = new Date(); const doc = { ...input, businessName: resolvedBusinessName, createdBy: auth.userId, status: 'open', deadline, createdAt: now, updatedAt: now }
+    const now = new Date(); const doc = { ...input, isPriceOnCall, businessName: resolvedBusinessName, createdBy: auth.userId, status: 'open', deadline, createdAt: now, updatedAt: now }
     const result = await db.collection('opportunities').insertOne(doc)
+    const insertedId = result.insertedId.toString()
+
+    // Trigger push notification to matching role talents
+    const targetRole = input.targetRole || input.target_role || 'model'
+    sendRolePushNotification({
+      targetRole,
+      opportunityId: insertedId,
+      title: doc.title,
+      businessName: resolvedBusinessName,
+      city: doc.city,
+    }).catch((err) => console.error('[FCM] Push notification error:', err))
+
     return NextResponse.json(successResponse(serialize({ _id: result.insertedId, ...doc })), { status: 201 })
   } catch (error) { return handleApiError(error) }
 }
