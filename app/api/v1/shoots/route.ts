@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
           category: opp?.category || opp?.type || 'Campaign',
           businessName: businessProfile?.companyName || (businessUser ? `${businessUser.firstName} ${businessUser.lastName}` : 'Studio Partner'),
           modelName: modelUser ? `${modelUser.firstName} ${modelUser.lastName}` : (app.modelName || 'Model / Talent'),
-          modelAvatar: modelProfile?.portfolio?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+          modelAvatar: (Array.isArray(modelProfile?.portfolio) ? modelProfile.portfolio.find((p: any) => typeof p === 'string' && (p.startsWith('http://') || p.startsWith('https://'))) : null) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
           date: shootDate.toISOString(),
           startTime: opp?.start_time || opp?.startTime || '10:00',
           endTime: opp?.end_time || opp?.endTime || '16:00',

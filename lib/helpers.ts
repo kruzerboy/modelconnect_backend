@@ -160,22 +160,19 @@ export async function enrichApplication(db: any, app: any) {
     modelProfile = await db.collection('businessProfiles').findOne({ $or: userQueries })
   }
 
-  // 4. Resolve Candidate Portfolio & Avatar
+  // 4. Resolve Candidate Portfolio & Avatar (only remote CDN/cloud URLs)
   let portfolioList: string[] = []
   if (Array.isArray(modelProfile?.portfolio)) {
-    portfolioList = modelProfile.portfolio.map((x: any) => String(x)).filter((s: string) => s.trim().length > 0)
+    portfolioList = modelProfile.portfolio
+      .map((x: any) => String(x).trim())
+      .filter((s: string) => s.startsWith('http://') || s.startsWith('https://'))
   } else if (Array.isArray(modelUser?.portfolio)) {
-    portfolioList = modelUser.portfolio.map((x: any) => String(x)).filter((s: string) => s.trim().length > 0)
+    portfolioList = modelUser.portfolio
+      .map((x: any) => String(x).trim())
+      .filter((s: string) => s.startsWith('http://') || s.startsWith('https://'))
   }
 
-  // Sort portfolio so real network URLs (http/https) take precedence over stale device local paths (/data/user/0...)
-  portfolioList.sort((a, b) => {
-    const aIsNet = a.startsWith('http://') || a.startsWith('https://') ? 1 : 0
-    const bIsNet = b.startsWith('http://') || b.startsWith('https://') ? 1 : 0
-    return bIsNet - aIsNet
-  })
-
-  // Candidates for avatar in priority order
+  // Candidates for avatar in priority order (only valid http/https URLs)
   const avatarCandidates = [
     modelProfile?.avatar,
     modelProfile?.profilePicture,
@@ -186,13 +183,10 @@ export async function enrichApplication(db: any, app: any) {
     modelUser?.profilePicture,
     ...portfolioList,
     app.modelAvatar,
-  ].filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+  ].filter((s): s is string => typeof s === 'string' && (s.startsWith('http://') || s.startsWith('https://')))
 
-  // Find first cloud URL if available, otherwise first non-empty candidate
-  const resolvedAvatar =
-    avatarCandidates.find((url) => url.startsWith('http://') || url.startsWith('https://')) ||
-    avatarCandidates[0] ||
-    null
+  // Find first cloud URL if available
+  const resolvedAvatar = avatarCandidates[0] || null
 
   if (portfolioList.length === 0 && resolvedAvatar) {
     portfolioList = [resolvedAvatar]

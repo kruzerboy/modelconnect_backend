@@ -21,11 +21,20 @@ export function isCloudinaryConfigured(): boolean {
 
 function initCloudinary() {
   if (process.env.CLOUDINARY_URL) {
-    cloudinary.config({
-      cloudinary_url: process.env.CLOUDINARY_URL,
-      secure: true,
-    })
-  } else if (process.env.CLOUDINARY_CLOUD_NAME) {
+    try {
+      const parsed = new URL(process.env.CLOUDINARY_URL)
+      cloudinary.config({
+        cloud_name: parsed.hostname,
+        api_key: parsed.username,
+        api_secret: parsed.password,
+        secure: true,
+      })
+      return
+    } catch (e) {
+      console.error('Failed to parse CLOUDINARY_URL:', e)
+    }
+  }
+  if (process.env.CLOUDINARY_CLOUD_NAME) {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
