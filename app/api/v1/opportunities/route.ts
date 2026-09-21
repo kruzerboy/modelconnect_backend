@@ -77,8 +77,11 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireAuth(request); if (auth.role !== 'business') throw new ApiError(ERROR_CODES.FORBIDDEN, 403, 'Only businesses can create opportunities')
     const input = await parseBody(request, opportunitySchema)
-    const isPriceOnCall = Boolean(input.isPriceOnCall || input.is_price_on_call)
-    if (!isPriceOnCall && input.budget.max < input.budget.min) {
+    const rawPriceOnCall = Boolean(input.isPriceOnCall || input.is_price_on_call)
+    const budgetMax = input.budget?.max ?? 0
+    const budgetMin = input.budget?.min ?? 0
+    const isPriceOnCall = rawPriceOnCall || (budgetMax <= 0 && budgetMin <= 0)
+    if (!isPriceOnCall && budgetMax > 0 && budgetMax < budgetMin) {
       throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'Maximum budget must be at least the minimum budget')
     }
     const deadline = new Date(input.deadline); if (deadline <= new Date()) throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'Deadline must be in the future')

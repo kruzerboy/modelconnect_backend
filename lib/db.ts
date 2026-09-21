@@ -63,15 +63,6 @@ async function createIndexes(db: Db) {
   await db.collection('shortlists').createIndex({ userId: 1 })
   await db.collection('shortlists').createIndex({ createdAt: -1 })
 
-  // Conversations
-  await db.collection('conversations').createIndex({ participants: 1 })
-  await db.collection('conversations').createIndex({ opportunityId: 1, applicantId: 1 }, { sparse: true })
-  await db.collection('conversations').createIndex({ updatedAt: -1 })
-
-  // Messages
-  await db.collection('messages').createIndex({ conversationId: 1, createdAt: -1 })
-  await db.collection('messages').createIndex({ senderId: 1 })
-
   // Notifications
   await db.collection('notifications').createIndex({ userId: 1, createdAt: -1 })
   await db.collection('notifications').createIndex({ userId: 1, read: 1 })

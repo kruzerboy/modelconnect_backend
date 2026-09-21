@@ -98,10 +98,10 @@ export const opportunitySchema = z.object({
   is_price_on_call: z.boolean().optional(),
   type: z.enum(['shoot', 'campaign', 'test', 'collaboration', 'other']).default('shoot'),
   budget: z.object({
-    min: z.number().min(0, 'Min budget must be non-negative'),
-    max: z.number().min(0, 'Max budget must be non-negative'),
+    min: z.number().min(0, 'Min budget must be non-negative').default(0),
+    max: z.number().min(0, 'Max budget must be non-negative').default(0),
     currency: z.string().length(3).default('INR'),
-  }),
+  }).optional().default({ min: 0, max: 0, currency: 'INR' }),
   deadline: z.string(),
   businessName: z.string().optional(),
   city: z.string().optional(),
@@ -140,19 +140,10 @@ export const opportunitySchema = z.object({
 
 // Application schema
 export const applicationSchema = z.object({
-  proposedPrice: z.number().positive('Proposed price must be positive'),
+  proposedPrice: z.number().min(0, 'Proposed price must be non-negative').optional().default(0),
   message: z.string().min(1, 'Message is required').max(1000),
-})
-
-// Chat schemas
-export const messageSchema = z.object({
-  content: z.string().min(1, 'Message cannot be empty').max(5000),
-  type: z.enum(['text', 'attachment']).default('text'),
-})
-
-export const createConversationSchema = z.object({
-  opportunityId: z.string().optional(),
-  recipientId: z.string().min(1, 'Recipient ID is required'),
+  phone: z.string().optional().nullable(),
+  contactNumber: z.string().optional().nullable(),
 })
 
 // Pagination schema
@@ -175,6 +166,5 @@ export type PricingInput = z.infer<typeof pricingSchema>
 export type AvailabilityInput = z.infer<typeof availabilitySchema>
 export type OpportunityInput = z.infer<typeof opportunitySchema>
 export type ApplicationInput = z.infer<typeof applicationSchema>
-export type MessageInput = z.infer<typeof messageSchema>
 export type PaginationInput = z.infer<typeof paginationSchema>
 export type FcmTokenInput = z.infer<typeof fcmTokenSchema>

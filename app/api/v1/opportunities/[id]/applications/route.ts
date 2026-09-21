@@ -51,6 +51,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       userId: auth.userId,
       proposedPrice: input.proposedPrice,
       message: input.message,
+      phone: input.phone || input.contactNumber || '',
+      contactNumber: input.phone || input.contactNumber || '',
       status: 'pending',
       createdAt: now,
       updatedAt: now,
