@@ -222,7 +222,7 @@ export async function enrichApplication(db: any, app: any) {
     modelPortfolio: portfolioList,
     modelRating: modelProfile?.rating || 4.9,
     modelInstagram: modelProfile?.instagram || modelProfile?.socialHandles?.instagram || modelProfile?.socialHandle || '',
-    modelPhone: app.phone || app.contactNumber || modelUser?.phone || modelProfile?.phone || '',
+    modelPhone: app.phone || app.contactNumber || modelUser?.phoneNumber || modelUser?.phone || modelProfile?.phone || '',
     modelEmail: modelUser?.email || modelProfile?.email || '',
 
     // Company & Opportunity details for Model
@@ -230,7 +230,7 @@ export async function enrichApplication(db: any, app: any) {
     opportunityCategory: oppDoc?.category || oppDoc?.type || 'Fashion',
     businessName: oppDoc?.businessName || (businessUser ? `${businessUser.firstName || ''} ${businessUser.lastName || ''}`.trim() : 'Production Studio'),
     businessOwnerId: oppDoc?.createdBy || '',
-    businessPhone: oppDoc?.phone || oppDoc?.contactNumber || businessUser?.phone || '',
+    businessPhone: oppDoc?.phone || oppDoc?.contactNumber || businessUser?.phoneNumber || businessUser?.phone || '',
     contactPersonName: oppDoc?.contactPersonName || '',
     contactPersonDesignation: oppDoc?.contactPersonDesignation || '',
     opportunityBudgetMin: oppDoc?.budget?.min ?? oppDoc?.budgetMin ?? 0,
