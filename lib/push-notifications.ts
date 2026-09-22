@@ -105,6 +105,24 @@ export async function sendRolePushNotification(payload: PushNotificationPayload)
           targetRole,
           click_action: 'FLUTTER_NOTIFICATION_CLICK',
         },
+        android: {
+          priority: 'high',
+          notification: {
+            channelId: 'opportunity_alerts',
+            sound: 'opportunity_alert',
+            vibrateTimingsMillis: [0, 250, 100, 250],
+            priority: 'high',
+            defaultVibrateTimings: false,
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'opportunity_alert.caf',
+              badge: 1,
+            },
+          },
+        },
       })
       console.log(`[FCM] Sent ${response.successCount} messages, ${response.failureCount} failed.`)
       return { sent: response.successCount, failed: response.failureCount }
