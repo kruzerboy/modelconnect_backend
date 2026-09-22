@@ -101,6 +101,9 @@ export async function POST(request: NextRequest) {
       title: doc.title,
       businessName: resolvedBusinessName,
       city: doc.city,
+      preferredGender: input.preferredGender || undefined,
+      preferredAgeMin: input.preferredAgeMin || undefined,
+      preferredAgeMax: input.preferredAgeMax || undefined,
     }).catch((err) => console.error('[FCM] Push notification error:', err))
 
     return NextResponse.json(successResponse(serialize({ _id: result.insertedId, ...doc })), { status: 201 })

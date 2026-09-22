@@ -7,6 +7,9 @@ export interface PushNotificationPayload {
   businessName: string
   city?: string
   budgetDisplay?: string
+  preferredGender?: string
+  preferredAgeMin?: number
+  preferredAgeMax?: number
 }
 
 function getFirebaseMessaging() {
@@ -78,8 +81,49 @@ export async function sendRolePushNotification(payload: PushNotificationPayload)
     const targetRole = (payload.targetRole || 'model').toLowerCase()
 
     // Find all device tokens for users registered with this role
-    const devices = await db.collection('userDevices').find({ role: targetRole }).toArray()
-    const tokens = devices.map((d) => d.fcmToken).filter(Boolean)
+    // Using aggregation to join with users collection and filter by demographic if needed
+    const pipeline: any[] = [
+      { $match: { role: targetRole } },
+      {
+        $lookup: {
+          from: 'users',
+          let: { userIdStr: "$userId" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", { $toObjectId: "$$userIdStr" }] } } }
+          ],
+          as: "user"
+        }
+      },
+      { $unwind: "$user" }
+    ]
+
+    // Apply Gender Filter
+    if (payload.preferredGender && payload.preferredGender.toLowerCase() !== 'any') {
+      pipeline.push({ $match: { "user.profile.gender": payload.preferredGender.toLowerCase() } })
+    }
+
+    // Apply Age Filter by converting required age to DOB bounds
+    if (payload.preferredAgeMin || payload.preferredAgeMax) {
+      const now = new Date()
+      const matchDob: any = {}
+      
+      if (payload.preferredAgeMin) {
+        const maxDate = new Date()
+        maxDate.setFullYear(now.getFullYear() - payload.preferredAgeMin)
+        matchDob.$lte = maxDate.toISOString()
+      }
+      
+      if (payload.preferredAgeMax) {
+        const minDate = new Date()
+        minDate.setFullYear(now.getFullYear() - (payload.preferredAgeMax + 1))
+        matchDob.$gt = minDate.toISOString()
+      }
+      
+      pipeline.push({ $match: { "user.profile.dateOfBirth": matchDob } })
+    }
+
+    const devices = await db.collection('userDevices').aggregate(pipeline).toArray()
+    const tokens = devices.map((d: any) => d.fcmToken).filter(Boolean)
 
     if (tokens.length === 0) {
       console.log(`[FCM] No registered devices found for role "${targetRole}"`)

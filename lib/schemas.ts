@@ -39,6 +39,9 @@ export const modelProfileSchema = z.object({
   bio: z.string().max(1000, 'Bio must be at most 1000 characters').optional(),
   specialties: z.array(z.string()).optional().default([]),
   experience: z.enum(['beginner', 'intermediate', 'professional', 'expert']).optional().default('intermediate'),
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  dateOfBirth: z.string().optional(), // ISO date string
+  agreedToPrivacyPolicy: z.boolean().optional(),
   location: z.object({
     city: z.string().optional().default(''),
     country: z.string().optional().default(''),
