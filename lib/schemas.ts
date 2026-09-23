@@ -39,7 +39,13 @@ export const modelProfileSchema = z.object({
   bio: z.string().max(1000, 'Bio must be at most 1000 characters').optional(),
   specialties: z.array(z.string()).optional().default([]),
   experience: z.enum(['beginner', 'intermediate', 'professional', 'expert']).optional().default('intermediate'),
-  gender: z.enum(['male', 'female', 'other']).optional(),
+  gender: z.preprocess((val) => {
+    if (typeof val !== 'string' || !val.trim()) return undefined
+    const v = val.trim().toLowerCase()
+    if (v === 'male' || v === 'female' || v === 'other') return v
+    if (v === 'non-binary' || v === 'nonbinary') return 'other'
+    return undefined
+  }, z.enum(['male', 'female', 'other']).optional()),
   dateOfBirth: z.string().optional(), // ISO date string
   agreedToPrivacyPolicy: z.boolean().optional(),
   location: z.object({

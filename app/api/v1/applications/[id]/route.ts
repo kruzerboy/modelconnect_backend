@@ -24,9 +24,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const isApplicant = app.userId === auth.userId
     const isAdmin = auth.role === 'admin'
     const isProgressOrComplete = status === 'in_progress' || status === 'completed'
+    const isApplicantAction = isApplicant && (isProgressOrComplete || status === 'withdrawn' || status === 'under_review')
 
     if (!isCreator && !isAdmin) {
-      if (!isApplicant || !isProgressOrComplete) {
+      if (!isApplicantAction) {
         throw new ApiError(ERROR_CODES.FORBIDDEN, 403, 'You do not have permission to update this application status')
       }
     }
@@ -60,6 +61,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         title = 'Shoot Completed'
         message = `"${opp?.title || 'Photoshoot'}" has been marked as Completed.`
         type = 'shoot_completed'
+      } else if (status === 'withdrawn') {
+        title = 'Application Withdrawn'
+        message = `A candidate withdrew their application for "${opp?.title || 'Photoshoot'}".`
+        type = 'application_withdrawn'
       }
 
       if (title) {
@@ -74,6 +79,51 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json(successResponse(serialize(updated)))
   } catch (error) {
 
+    return handleApiError(error)
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const auth = await requireAuth(request)
+    const { id } = await params
+    const db = await connectDb()
+    const appId = objectId(id, 'application id')
+
+    const app = await db.collection('applications').findOne({ _id: appId })
+    if (!app) throw new ApiError(ERROR_CODES.NOT_FOUND, 404, 'Application not found')
+
+    const opp = await db.collection('opportunities').findOne({ _id: objectId(app.opportunityId) })
+    const isCreator = opp && opp.createdBy === auth.userId
+    const isApplicant = app.userId === auth.userId
+    const isAdmin = auth.role === 'admin'
+
+    if (!isApplicant && !isCreator && !isAdmin) {
+      throw new ApiError(ERROR_CODES.FORBIDDEN, 403, 'You do not have permission to delete or withdraw this application')
+    }
+
+    await db.collection('applications').deleteOne({ _id: appId })
+
+    if (opp) {
+      await db.collection('opportunities').updateOne(
+        { _id: opp._id },
+        { $inc: { applicantCount: -1 } }
+      )
+    }
+
+    if (isApplicant && opp?.createdBy) {
+      await createNotification(
+        db,
+        opp.createdBy,
+        'application_withdrawn',
+        'Application Withdrawn',
+        `A candidate withdrew their application for "${opp.title}".`,
+        { opportunityId: app.opportunityId }
+      )
+    }
+
+    return NextResponse.json(successResponse({ deleted: true, id }))
+  } catch (error) {
     return handleApiError(error)
   }
 }
