@@ -142,6 +142,8 @@ export const opportunitySchema = z.object({
   preferredAgeMin: z.number().optional().nullable(),
   preferredAgeMax: z.number().optional().nullable(),
   clothType: z.string().optional().nullable(),
+  shootType: z.string().optional().nullable(),
+  shoot_type: z.string().optional().nullable(),
   clothesProvidedByOwner: z.boolean().optional().nullable(),
   wardrobeNote: z.string().optional().nullable(),
 }).passthrough()

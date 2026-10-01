@@ -135,8 +135,13 @@ export default function Page() {
         </section>
 
         {/* Footer */}
-        <footer className="mt-12 text-center text-xs text-slate-500">
-          ModelConnect Backend &bull; Running on Node.js / Next.js &bull; Port 3000
+        <footer className="mt-12 text-center text-xs text-slate-500 space-y-2">
+          <p>ModelConnect Backend &bull; Running on Node.js / Next.js &bull; Port 3000</p>
+          <p>
+            <Link href="/delete-account" className="text-slate-400 hover:text-rose-400 underline transition-colors">
+              Delete Account & User Data Policy
+            </Link>
+          </p>
         </footer>
       </div>
     </main>

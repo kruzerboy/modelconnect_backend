@@ -2,11 +2,12 @@
   "name": "my-project",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@12.3.4",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "build": "next build --webpack",
+    "start": "node server.js",
+    "pack:hostinger": "zip -r hostinger_deploy.zip app components lib next.config.mjs postcss.config.mjs tsconfig.json server.js package.json package-lock.json dmw-models-app-firebase-adminsdk.json .env.example .next -x \"**/.git*\" -x \".next/cache/*\" -x \"**/node_modules/*\"",
+    "build:hostinger": "npm run build && npm run pack:hostinger"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -20,8 +21,8 @@
     "jose": "^6.2.12",
     "lucide-react": "^1.16.0",
     "mongodb": "^7.6.0",
-    "next": "16.3.3",
-    "nodemailer": "^6.10.0",
+    "next": "^16.3.7",
+    "nodemailer": "^10.0.13",
     "postcss": "^8.5",
     "react": "^19",
     "react-dom": "^19",
@@ -37,5 +38,9 @@
     "@types/nodemailer": "^6.4.17",
     "@types/react": "^19",
     "@types/react-dom": "^19"
+  },
+  "overrides": {
+    "uuid": "^11.1.1",
+    "brace-expansion": "^5.0.12"
   }
 }

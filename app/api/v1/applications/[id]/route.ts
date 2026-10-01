@@ -20,8 +20,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { status } = body
     if (!status) throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'Status is required')
 
-    const isCreator = opp && opp.createdBy === auth.userId
-    const isApplicant = app.userId === auth.userId
+    const isCreator = opp && (
+      opp.createdBy?.toString() === auth.userId?.toString() ||
+      opp.businessOwnerId?.toString() === auth.userId?.toString()
+    )
+    const isApplicant = app.userId?.toString() === auth.userId?.toString()
     const isAdmin = auth.role === 'admin'
     const isProgressOrComplete = status === 'in_progress' || status === 'completed'
     const isApplicantAction = isApplicant && (isProgressOrComplete || status === 'withdrawn' || status === 'under_review')
@@ -38,8 +41,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       { $set: { status, updatedAt: now } }
     )
 
+    if (status === 'withdrawn' && opp) {
+      await db.collection('opportunities').updateOne(
+        { _id: opp._id },
+        {
+          $inc: { applicationsCount: -1, applications_count: -1, applicantCount: -1 },
+          $set: { updatedAt: now }
+        }
+      )
+    }
+
     // Notify counterpart on status updates
-    const recipientId = auth.userId === app.userId ? (opp?.createdBy || '') : app.userId
+    const recipientId = auth.userId === app.userId ? (opp?.createdBy?.toString() || opp?.businessOwnerId?.toString() || '') : app.userId
     if (recipientId) {
       let title = ''
       let message = ''
@@ -94,8 +107,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (!app) throw new ApiError(ERROR_CODES.NOT_FOUND, 404, 'Application not found')
 
     const opp = await db.collection('opportunities').findOne({ _id: objectId(app.opportunityId) })
-    const isCreator = opp && opp.createdBy === auth.userId
-    const isApplicant = app.userId === auth.userId
+    const isCreator = opp && (
+      opp.createdBy?.toString() === auth.userId?.toString() ||
+      opp.businessOwnerId?.toString() === auth.userId?.toString()
+    )
+    const isApplicant = app.userId?.toString() === auth.userId?.toString()
     const isAdmin = auth.role === 'admin'
 
     if (!isApplicant && !isCreator && !isAdmin) {
@@ -107,17 +123,18 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (opp) {
       await db.collection('opportunities').updateOne(
         { _id: opp._id },
-        { $inc: { applicantCount: -1 } }
+        { $inc: { applicationsCount: -1, applications_count: -1, applicantCount: -1 } }
       )
     }
 
-    if (isApplicant && opp?.createdBy) {
+    const creatorId = opp?.createdBy?.toString() || opp?.businessOwnerId?.toString()
+    if (isApplicant && creatorId) {
       await createNotification(
         db,
-        opp.createdBy,
+        creatorId,
         'application_withdrawn',
         'Application Withdrawn',
-        `A candidate withdrew their application for "${opp.title}".`,
+        `A candidate withdrew their application for "${opp?.title || 'Photoshoot'}".`,
         { opportunityId: app.opportunityId }
       )
     }
