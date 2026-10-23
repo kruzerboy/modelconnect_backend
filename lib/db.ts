@@ -27,6 +27,7 @@ async function createIndexes(db: Db) {
   try {
     // Users collection
     try {
+      await db.collection('users').updateMany({ email: null }, { $unset: { email: '' } }).catch(() => {})
       await db.collection('users').createIndex({ email: 1 }, { unique: true, sparse: true })
     } catch (err: any) {
       if (err?.code === 85 || err?.codeName === 'IndexOptionsConflict') {

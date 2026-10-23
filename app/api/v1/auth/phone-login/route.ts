@@ -47,18 +47,18 @@ export async function POST(request: NextRequest) {
     if (!user) {
       // Auto-create new user on phone verification
       isNewUser = true
-      const newUser = {
+      const newUser: Record<string, unknown> = {
         phoneNumber: cleanPhone,
-        email: null,
         role: 'model',
         firstName: '',
         lastName: '',
-        socialHandle: null,
-        firebaseUid,
         status: 'active',
         isProfileCompleted: false,
         createdAt: now,
         updatedAt: now,
+      }
+      if (firebaseUid) {
+        newUser.firebaseUid = firebaseUid
       }
 
       const insertResult = await db.collection('users').insertOne(newUser)
