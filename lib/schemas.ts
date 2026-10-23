@@ -20,6 +20,26 @@ export const loginSchema = z.object({
   firebaseUid: z.string().optional().nullable(),
 })
 
+export const checkPhoneSchema = z.object({
+  phoneNumber: z.string().min(8, 'Valid phone number is required'),
+})
+
+export const phoneLoginSchema = z.object({
+  phoneNumber: z.string().min(8, 'Valid phone number is required'),
+  firebaseUid: z.string().optional().nullable(),
+})
+
+export const completeProfileSchema = z.object({
+  role: z.enum(['model', 'business', 'camera', 'drone'], {
+    message: 'Role must be "model", "business", "camera", or "drone"',
+  }),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  city: z.string().optional().nullable(),
+  socialHandle: z.string().optional().nullable(),
+  bio: z.string().optional().nullable(),
+})
+
 export const passwordResetRequestSchema = z.object({
   email: z.string().email('Invalid email address'),
 })

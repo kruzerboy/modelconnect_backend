@@ -25,7 +25,8 @@ export async function connectDb(): Promise<Db> {
 
 async function createIndexes(db: Db) {
   // Users collection
-  await db.collection('users').createIndex({ email: 1 }, { unique: true })
+  await db.collection('users').createIndex({ email: 1 }, { unique: true, sparse: true })
+  await db.collection('users').createIndex({ phoneNumber: 1 }, { unique: true, sparse: true })
   await db.collection('users').createIndex({ username: 1 }, { unique: true, sparse: true })
 
   // Model profiles
