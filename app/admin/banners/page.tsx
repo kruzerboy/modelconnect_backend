@@ -12,6 +12,7 @@ interface Banner {
   targetPayload: string
   gradientColors?: string[]
   badge?: string
+  targetAudience?: 'all' | 'talent' | 'business'
   displayOrder: number
   active: boolean
 }
@@ -29,6 +30,7 @@ export default function BannersManagementPage() {
     ctaText: 'Explore',
     targetType: 'category',
     targetPayload: 'model',
+    targetAudience: 'all' as 'all' | 'talent' | 'business',
     badge: 'Trending Now',
     gradientColors: ['#00204B', '#0877E8'],
     displayOrder: 1,
@@ -132,6 +134,7 @@ export default function BannersManagementPage() {
               ctaText: 'Explore',
               targetType: 'category',
               targetPayload: 'model',
+              targetAudience: 'all',
               badge: 'Trending Now',
               gradientColors: ['#00204B', '#0877E8'],
               displayOrder: banners.length + 1,
@@ -288,6 +291,13 @@ export default function BannersManagementPage() {
                               {b.badge}
                             </span>
                           )}
+                          <span className="bg-blue-50 text-[#0877E8] text-[10px] font-bold px-1.5 py-0.5 rounded">
+                            {b.targetAudience === 'business'
+                              ? '🏢 Business'
+                              : b.targetAudience === 'talent'
+                              ? '💃 Talent'
+                              : '🌐 All Users'}
+                          </span>
                         </div>
                         <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
                           {b.subtitle}
@@ -330,6 +340,7 @@ export default function BannersManagementPage() {
                             ctaText: b.ctaText || 'Explore',
                             targetType: b.targetType,
                             targetPayload: b.targetPayload,
+                            targetAudience: b.targetAudience || 'all',
                             badge: b.badge || '',
                             gradientColors: b.gradientColors || ['#00204B', '#0877E8'],
                             displayOrder: b.displayOrder,
@@ -450,6 +461,26 @@ export default function BannersManagementPage() {
                     <option value="business">Studio & Brand Desk</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Target Audience (Role Visibility)
+                </label>
+                <select
+                  value={formData.targetAudience}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      targetAudience: e.target.value as 'all' | 'talent' | 'business',
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#0877E8] outline-none bg-white font-medium"
+                >
+                  <option value="all">🌐 All Users (Both Talents & Studio Owners)</option>
+                  <option value="talent">💃 Talents Only (Models, Videographers, Drone Pilots)</option>
+                  <option value="business">🏢 Business Owners Only (Studios & Brands)</option>
+                </select>
               </div>
 
               <div>

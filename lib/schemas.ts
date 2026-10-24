@@ -197,6 +197,7 @@ export const bannerSchema = z.object({
   ctaText: z.string().max(50).optional().default('Explore'),
   targetType: z.enum(['category', 'creator', 'casting', 'external']).default('category'),
   targetPayload: z.string().min(1, 'targetPayload is required'),
+  targetAudience: z.enum(['all', 'talent', 'business']).default('all'),
   gradientColors: z.array(z.string()).optional().default(['#00204B', '#0877E8']),
   badge: z.string().max(50).optional().default(''),
   displayOrder: z.number().int().default(0),
