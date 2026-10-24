@@ -87,11 +87,29 @@ export async function POST(request: NextRequest) {
     const deadline = new Date(input.deadline); if (deadline <= new Date()) throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'Deadline must be in the future')
     const db = await connectDb()
     const user = await db.collection('users').findOne({ _id: objectId(auth.userId) })
+
+    // Check opportunity quota if defined
+    if (user && user.availableOpportunityPosts !== undefined && user.availableOpportunityPosts <= 0) {
+      throw new ApiError(
+        ERROR_CODES.FORBIDDEN,
+        403,
+        'Opportunity posting limit reached. Please choose a plan or enter a promo code to post more.'
+      )
+    }
+
     const bProfile = await db.collection('businessProfiles').findOne({ userId: auth.userId })
     const resolvedBusinessName = bProfile?.companyName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '') || input.businessName || 'Business Account'
     const now = new Date(); const doc = { ...input, isPriceOnCall, businessName: resolvedBusinessName, createdBy: auth.userId, status: 'open', deadline, createdAt: now, updatedAt: now }
     const result = await db.collection('opportunities').insertOne(doc)
     const insertedId = result.insertedId.toString()
+
+    // Decrement post quota if tracked
+    if (user && user.availableOpportunityPosts && user.availableOpportunityPosts > 0) {
+      await db.collection('users').updateOne(
+        { _id: user._id },
+        { $inc: { availableOpportunityPosts: -1 } }
+      )
+    }
 
     // Trigger push notification to matching role talents
     const targetRole = input.targetRole || input.target_role || 'model'

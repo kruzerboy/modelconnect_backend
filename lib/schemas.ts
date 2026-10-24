@@ -259,6 +259,13 @@ export const validateCouponSchema = z.object({
   userId: z.string().optional(),
 })
 
+export const checkoutPlanSchema = z.object({
+  planCode: z.string().min(1, 'Plan code is required'),
+  couponCode: z.string().optional().nullable(),
+  paymentMethod: z.string().optional().default('upi'),
+  paymentTransactionId: z.string().optional().nullable(),
+})
+
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type ModelProfileInput = z.infer<typeof modelProfileSchema>
@@ -277,3 +284,4 @@ export type UpdatePlanInput = z.infer<typeof updatePlanSchema>
 export type CouponInput = z.infer<typeof couponSchema>
 export type UpdateCouponInput = z.infer<typeof updateCouponSchema>
 export type ValidateCouponInput = z.infer<typeof validateCouponSchema>
+export type CheckoutPlanInput = z.infer<typeof checkoutPlanSchema>
