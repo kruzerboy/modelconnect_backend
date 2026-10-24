@@ -252,4 +252,43 @@ curl -X POST http://localhost:3000/api/v1/admin/ai/copilot \
   -d '{
     "question": "How many active commercial shoots do we have right now?"
   }'
+
+# 5. Test active pricing plans (for mobile checkout)
+curl -X GET http://localhost:3000/api/v1/plans
+
+# 6. Test promo code validation (e.g. 50% discount)
+curl -X POST http://localhost:3000/api/v1/coupons/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "LAUNCH50",
+    "amount": 2499
+  }'
+
+# 7. Test 100% Free Founder Pass
+curl -X POST http://localhost:3000/api/v1/coupons/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "FOUNDER100",
+    "amount": 999
+  }'
 ```
+
+---
+
+## 6. Plans & Promo Codes APIs
+
+### Plans Management
+* **List Active Plans (Public for Mobile App):** `GET /api/v1/plans`
+* **Admin List All Plans:** `GET /api/v1/admin/plans`
+* **Admin Create Plan:** `POST /api/v1/admin/plans`
+* **Admin Update Plan:** `PUT /api/v1/admin/plans/:id`
+* **Admin Delete Plan:** `DELETE /api/v1/admin/plans/:id`
+
+### Promo Codes & Special Offers
+* **Validate Promo Code:** `POST /api/v1/coupons/validate`
+  * Body: `{ "code": "LAUNCH50", "amount": 2499 }`
+  * Returns: `{ "valid": true, "discountAmount": 1249, "finalPayable": 1250, "isFreePass": false }`
+* **Admin List Coupons:** `GET /api/v1/admin/coupons`
+* **Admin Create Coupon:** `POST /api/v1/admin/coupons`
+* **Admin Update Coupon:** `PUT /api/v1/admin/coupons/:id`
+* **Admin Delete Coupon:** `DELETE /api/v1/admin/coupons/:id`

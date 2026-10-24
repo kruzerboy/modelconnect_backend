@@ -96,6 +96,14 @@ async function createIndexes(db: Db) {
     // Featured Profiles
     await db.collection('featuredProfiles').createIndex({ active: 1, slotOrder: 1 }).catch(() => {})
     await db.collection('featuredProfiles').createIndex({ userId: 1 }, { unique: true }).catch(() => {})
+
+    // Pricing Plans
+    await db.collection('plans').createIndex({ code: 1 }, { unique: true }).catch(() => {})
+    await db.collection('plans').createIndex({ active: 1, displayOrder: 1 }).catch(() => {})
+
+    // Coupons
+    await db.collection('coupons').createIndex({ code: 1 }, { unique: true }).catch(() => {})
+    await db.collection('coupons').createIndex({ active: 1, expiresAt: 1 }).catch(() => {})
   } catch (e) {
     console.warn('[DB] Index creation warning:', e)
   }

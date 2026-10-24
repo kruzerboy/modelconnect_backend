@@ -218,6 +218,47 @@ export const featuredSlotSchema = z.object({
   active: z.boolean().default(true),
 })
 
+// Pricing Plan schema
+export const planSchema = z.object({
+  name: z.string().min(1, 'Plan name is required').max(100),
+  code: z.string().min(1, 'Plan code is required').toLowerCase().regex(/^[a-z0-9_-]+$/),
+  price: z.number().min(0, 'Price must be non-negative'),
+  billingCycle: z.enum(['one_time', 'monthly', 'yearly']).default('one_time'),
+  includedPosts: z.number().int().min(1).default(1),
+  maxTalentsPerPost: z.number().int().min(1).default(2),
+  features: z.array(z.string()).default([]),
+  badge: z.string().max(50).optional().default(''),
+  highlight: z.boolean().default(false),
+  active: z.boolean().default(true),
+  displayOrder: z.number().int().default(0),
+})
+
+export const updatePlanSchema = planSchema.partial()
+
+// Coupon / Promo Code schema
+export const couponSchema = z.object({
+  code: z.string().min(2, 'Code is required').toUpperCase().trim(),
+  description: z.string().max(250).optional().default(''),
+  discountType: z.enum(['percentage', 'flat', 'free_pass']).default('percentage'),
+  discountValue: z.number().min(0, 'Discount value must be non-negative'),
+  maxDiscountCap: z.number().min(0).optional().default(0),
+  minOrderAmount: z.number().min(0).optional().default(0),
+  applicablePlans: z.array(z.string()).optional().default(['all']),
+  totalUsageLimit: z.number().int().min(1).default(100),
+  perUserLimit: z.number().int().min(1).default(1),
+  expiresAt: z.string().optional().nullable(),
+  active: z.boolean().default(true),
+})
+
+export const updateCouponSchema = couponSchema.partial()
+
+export const validateCouponSchema = z.object({
+  code: z.string().min(1, 'Code is required').toUpperCase().trim(),
+  amount: z.number().min(0, 'Amount must be non-negative'),
+  planCode: z.string().optional(),
+  userId: z.string().optional(),
+})
+
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type ModelProfileInput = z.infer<typeof modelProfileSchema>
@@ -231,3 +272,8 @@ export type FcmTokenInput = z.infer<typeof fcmTokenSchema>
 export type BannerInput = z.infer<typeof bannerSchema>
 export type UpdateBannerInput = z.infer<typeof updateBannerSchema>
 export type FeaturedSlotInput = z.infer<typeof featuredSlotSchema>
+export type PlanInput = z.infer<typeof planSchema>
+export type UpdatePlanInput = z.infer<typeof updatePlanSchema>
+export type CouponInput = z.infer<typeof couponSchema>
+export type UpdateCouponInput = z.infer<typeof updateCouponSchema>
+export type ValidateCouponInput = z.infer<typeof validateCouponSchema>

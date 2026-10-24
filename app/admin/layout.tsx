@@ -44,6 +44,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Overview', href: '/admin', icon: '📊' },
     { name: 'Hero Banners', href: '/admin/banners', icon: '🎨' },
     { name: 'Featured Profiles', href: '/admin/featured', icon: '⭐' },
+    { name: 'Plans & Promos', href: '/admin/plans', icon: '🏷️' },
     { name: 'AI Studio Copilot', href: '/admin/ai-studio', icon: '✨' },
   ]
 
