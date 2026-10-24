@@ -279,6 +279,10 @@ curl -X POST http://localhost:3000/api/v1/coupons/validate \
 
 ### Plans Management
 * **List Active Plans (Public for Mobile App):** `GET /api/v1/plans`
+* **Subscribe / Checkout Plan (Mobile App):** `POST /api/v1/plans/checkout`
+  * Body: `{ "planCode": "production_pack", "couponCode": "LAUNCH50", "paymentMethod": "upi" }`
+  * Automatically applies discount, activates subscription, and credits post quota to user.
+* **My Active Plan & Quota (Mobile App):** `GET /api/v1/plans/my-plan`
 * **Admin List All Plans:** `GET /api/v1/admin/plans`
 * **Admin Create Plan:** `POST /api/v1/admin/plans`
 * **Admin Update Plan:** `PUT /api/v1/admin/plans/:id`
