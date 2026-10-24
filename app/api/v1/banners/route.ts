@@ -8,7 +8,7 @@ const DEFAULT_BANNERS = [
   // ── Talent-Targeted Banners (Models, Videographers, Drone Pilots) ──
   {
     title: 'Commercial Brand Shoots',
-    subtitle: 'Earn up to ₹45,000 / day on top fashion & lifestyle campaigns',
+    subtitle: 'Now casting runway & commercial talent for top brand campaigns',
     imageUrl: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1200&q=80',
     ctaText: 'Explore Shoots',
     targetType: 'casting',
