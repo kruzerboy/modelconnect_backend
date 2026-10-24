@@ -88,6 +88,14 @@ async function createIndexes(db: Db) {
     // Password Resets
     await db.collection('passwordResets').createIndex({ email: 1 }).catch(() => {})
     await db.collection('passwordResets').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }).catch(() => {})
+
+    // Banners
+    await db.collection('banners').createIndex({ active: 1, displayOrder: 1 }).catch(() => {})
+    await db.collection('banners').createIndex({ createdAt: -1 }).catch(() => {})
+
+    // Featured Profiles
+    await db.collection('featuredProfiles').createIndex({ active: 1, slotOrder: 1 }).catch(() => {})
+    await db.collection('featuredProfiles').createIndex({ userId: 1 }, { unique: true }).catch(() => {})
   } catch (e) {
     console.warn('[DB] Index creation warning:', e)
   }

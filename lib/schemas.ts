@@ -189,6 +189,34 @@ export const fcmTokenSchema = z.object({
   platform: z.enum(['android', 'ios', 'web', 'unknown']).optional().default('unknown'),
 })
 
+// Banner schemas
+export const bannerSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(150),
+  subtitle: z.string().max(250).optional().default(''),
+  imageUrl: z.string().url('Must be a valid image URL'),
+  ctaText: z.string().max(50).optional().default('Explore'),
+  targetType: z.enum(['category', 'creator', 'casting', 'external']).default('category'),
+  targetPayload: z.string().min(1, 'targetPayload is required'),
+  gradientColors: z.array(z.string()).optional().default(['#00204B', '#0877E8']),
+  badge: z.string().max(50).optional().default(''),
+  displayOrder: z.number().int().default(0),
+  active: z.boolean().default(true),
+  startDate: z.string().optional().nullable(),
+  endDate: z.string().optional().nullable(),
+})
+
+export const updateBannerSchema = bannerSchema.partial()
+
+// Featured Profile schema
+export const featuredSlotSchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+  slotOrder: z.number().int().min(1).max(50).default(1),
+  featuredRole: z.enum(['model', 'camera', 'drone', 'business', 'all']).default('all'),
+  curatorNote: z.string().max(300).optional().default('Curator Choice'),
+  badge: z.string().max(50).optional().default('Featured'),
+  active: z.boolean().default(true),
+})
+
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type ModelProfileInput = z.infer<typeof modelProfileSchema>
@@ -199,3 +227,6 @@ export type OpportunityInput = z.infer<typeof opportunitySchema>
 export type ApplicationInput = z.infer<typeof applicationSchema>
 export type PaginationInput = z.infer<typeof paginationSchema>
 export type FcmTokenInput = z.infer<typeof fcmTokenSchema>
+export type BannerInput = z.infer<typeof bannerSchema>
+export type UpdateBannerInput = z.infer<typeof updateBannerSchema>
+export type FeaturedSlotInput = z.infer<typeof featuredSlotSchema>
