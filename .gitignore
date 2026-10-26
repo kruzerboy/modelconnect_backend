@@ -15,4 +15,5 @@ node_modules
 .next/
 .DS_Store
 deployment.zip
+hostinger_deploy.zip
 *firebase-adminsdk*.json

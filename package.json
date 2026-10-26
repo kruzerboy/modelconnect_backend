@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build --webpack",
+    "build": "NODE_OPTIONS='--max-old-space-size=2048' next build --webpack",
     "start": "node server.js",
     "pack:hostinger": "zip -r hostinger_deploy.zip app components lib next.config.mjs postcss.config.mjs tsconfig.json server.js package.json package-lock.json dmw-models-app-firebase-adminsdk.json .env.example .next -x \"**/.git*\" -x \".next/cache/*\" -x \"**/node_modules/*\"",
     "build:hostinger": "npm run build && npm run pack:hostinger"
@@ -17,7 +17,7 @@
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.11.0",
     "clsx": "^2.1.1",
-    "firebase-admin": "^14.4.0",
+    "firebase-admin": "^13.1.0",
     "jose": "^6.2.12",
     "lucide-react": "^1.16.0",
     "mongodb": "^7.6.0",
