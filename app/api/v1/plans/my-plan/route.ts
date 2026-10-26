@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
       _id: objectId(auth.userId),
     })
 
+    const isBusiness = user?.role === 'business' || user?.role === 'owner' || user?.role === 'client'
+
     // Count opportunities already posted by this user
     const postedCount = await db.collection('opportunities').countDocuments({
       createdBy: auth.userId,
@@ -31,14 +33,24 @@ export async function GET(request: NextRequest) {
     const availablePosts =
       user?.availableOpportunityPosts !== undefined
         ? user.availableOpportunityPosts
-        : 1 // Default free initial post for launch phase
+        : (isBusiness ? 1 : 0)
+
+    const defaultPlanName = isBusiness
+      ? (availablePosts > 0 ? 'Early Launch Free Trial' : 'No Active Plan')
+      : (user?.isSubscribed ? 'Model Pro Creator' : 'Talent Standard Access')
+
+    const defaultPlanCode = isBusiness
+      ? (availablePosts > 0 ? 'starter_trial' : 'none')
+      : (user?.isSubscribed ? 'model_pro' : 'talent_free')
 
     return NextResponse.json(
       successResponse({
         isSubscribed: Boolean(user?.isSubscribed),
-        currentPlan: user?.currentPlan || (availablePosts > 0 ? 'starter_trial' : 'none'),
-        currentPlanName: user?.currentPlanName || (availablePosts > 0 ? 'Early Launch Free Trial' : 'No Active Plan'),
+        userRole: user?.role || (isBusiness ? 'business' : 'model'),
+        currentPlan: user?.currentPlan || defaultPlanCode,
+        currentPlanName: user?.currentPlanName || defaultPlanName,
         availableOpportunityPosts: availablePosts,
+        availableApplications: user?.availableApplications !== undefined ? user.availableApplications : (user?.isSubscribed ? 999 : 10),
         totalOpportunitiesPosted: postedCount,
         planValidUntil: user?.planValidUntil ? new Date(user.planValidUntil).toISOString() : null,
         latestSubscription: sub ? serialize(sub) : null,

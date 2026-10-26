@@ -5,13 +5,85 @@ import { successResponse } from '@/lib/api-response'
 import { serialize } from '@/lib/route-utils'
 
 const DEFAULT_PLANS = [
+  // ── Talent & Model Membership Plans ──
+  {
+    name: 'Model Pro Creator',
+    code: 'model_pro',
+    price: 499,
+    billingCycle: 'monthly',
+    includedPosts: 50,
+    maxTalentsPerPost: 0,
+    targetAudience: 'model',
+    features: [
+      'Unlimited High-Budget Casting Applications',
+      'Verified Model Badge on Feed & Comp Card',
+      'Priority Review by Top Casting Directors',
+      'Direct WhatsApp Inquiry Unlock from Agencies',
+      'Zero Platform Commission on Bookings',
+      'High-Resolution Lookbook Gallery (Up to 15 Photos)',
+    ],
+    badge: 'POPULAR',
+    highlight: true,
+    active: true,
+    displayOrder: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    name: 'Model Elite VIP',
+    code: 'model_elite',
+    price: 999,
+    billingCycle: 'monthly',
+    includedPosts: 100,
+    maxTalentsPerPost: 0,
+    targetAudience: 'model',
+    features: [
+      'All Pro Creator Features Included',
+      'Guaranteed Top 3 Placement in Model Search',
+      'Monthly Featured Spotlight Carousel Inclusion',
+      'Free Video Showreel / Portfolio Hosting',
+      'Direct Agent Representation Inquiries',
+      'Personal Booking Concierge & Contract Support',
+    ],
+    badge: 'VIP ELITE',
+    highlight: false,
+    active: true,
+    displayOrder: 2,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    name: 'Camera & Cine Pro',
+    code: 'camera_pro',
+    price: 1499,
+    billingCycle: 'monthly',
+    includedPosts: 100,
+    maxTalentsPerPost: 0,
+    targetAudience: 'camera',
+    features: [
+      'Unlimited Commercial Crew Applications',
+      'DGCA License & Cine Rig Badge Verification',
+      'Direct Hiring by Production Houses',
+      'Spotlight Placement in Crew Directory',
+      'Zero Commission on Equipment / Shoot Bookings',
+    ],
+    badge: 'CREW PRO',
+    highlight: false,
+    active: true,
+    displayOrder: 3,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+
+  // ── Business, Casting & Studio Plans ──
   {
     name: 'Starter Casting',
-    code: 'starter',
+    code: 'starter_casting',
     price: 999,
     billingCycle: 'one_time',
     includedPosts: 1,
     maxTalentsPerPost: 2,
+    targetAudience: 'business',
     features: [
       '1 Casting Opportunity Post (Live 30 days)',
       'Up to 2 Talent Requirements (e.g. 2 models)',
@@ -22,7 +94,7 @@ const DEFAULT_PLANS = [
     badge: 'Starter',
     highlight: false,
     active: true,
-    displayOrder: 1,
+    displayOrder: 4,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -33,6 +105,7 @@ const DEFAULT_PLANS = [
     billingCycle: 'one_time',
     includedPosts: 3,
     maxTalentsPerPost: 4,
+    targetAudience: 'business',
     features: [
       '3 Casting Opportunity Posts (Save 17%)',
       'Up to 4 Talents per post (Models + Camera crew)',
@@ -43,28 +116,29 @@ const DEFAULT_PLANS = [
     badge: 'Most Popular',
     highlight: true,
     active: true,
-    displayOrder: 2,
+    displayOrder: 5,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    name: 'Agency Pro Desk',
-    code: 'agency_pro',
-    price: 6999,
+    name: 'Studio Enterprise',
+    code: 'business_enterprise',
+    price: 4999,
     billingCycle: 'monthly',
-    includedPosts: 10,
+    includedPosts: 15,
     maxTalentsPerPost: 10,
+    targetAudience: 'business',
     features: [
-      '10 Casting Opportunity Posts / month',
-      'Up to 10 Talents per post (Full commercial crew)',
-      'Featured Top placement on Mobile Home Feed',
-      'Google AI automated comp card quality scoring',
-      'Dedicated casting manager & WhatsApp support',
+      'Unlimited Casting Calls / month',
+      'Access to Entire Verified Talent Roster',
+      'Featured Studio Profile on Home Feed',
+      'Automated Comp Card Shortlisting',
+      'Dedicated Account Manager (SLA < 1 Hr)',
     ],
     badge: 'Best Value',
     highlight: false,
     active: true,
-    displayOrder: 3,
+    displayOrder: 6,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -72,20 +146,49 @@ const DEFAULT_PLANS = [
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const targetAudience = searchParams.get('targetAudience')
+
     const db = await connectDb()
     const plansCollection = db.collection('plans')
 
+    let query: any = { active: { $ne: false } }
+    if (targetAudience && targetAudience !== 'all') {
+      if (targetAudience === 'model' || targetAudience === 'talent') {
+        query.targetAudience = { $in: ['model', 'talent', 'camera', 'drone', 'all'] }
+      } else {
+        query.targetAudience = { $in: [targetAudience, 'all'] }
+      }
+    }
+
     let plans = await plansCollection
-      .find({ active: true })
+      .find(query)
       .sort({ displayOrder: 1, createdAt: 1 })
       .toArray()
 
-    if (plans.length === 0) {
+    // If database has no plans at all, seed with full roster
+    const totalCount = await plansCollection.countDocuments({})
+    if (totalCount === 0) {
       await plansCollection.insertMany(DEFAULT_PLANS)
       plans = await plansCollection
-        .find({ active: true })
+        .find(query)
         .sort({ displayOrder: 1 })
         .toArray()
+    }
+
+    // Fallback if query returned 0 from database
+    if (plans.length === 0) {
+      plans = DEFAULT_PLANS.filter((p) => {
+        if (!targetAudience || targetAudience === 'all') return true
+        if (targetAudience === 'model' || targetAudience === 'talent') {
+          return (
+            p.targetAudience === 'model' ||
+            p.targetAudience === 'camera' ||
+            p.targetAudience === 'all'
+          )
+        }
+        return p.targetAudience === targetAudience || p.targetAudience === 'all'
+      })
     }
 
     return NextResponse.json(
