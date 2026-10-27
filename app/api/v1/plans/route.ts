@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
 
     // Fallback if query returned 0 from database
     if (plans.length === 0) {
-      plans = DEFAULT_PLANS.filter((p) => {
+      plans = (DEFAULT_PLANS as any[]).filter((p) => {
         if (!targetAudience || targetAudience === 'all') return true
         if (targetAudience === 'model' || targetAudience === 'talent') {
           return (

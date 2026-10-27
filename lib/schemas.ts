@@ -193,7 +193,9 @@ export const fcmTokenSchema = z.object({
 export const bannerSchema = z.object({
   title: z.string().min(1, 'Title is required').max(150),
   subtitle: z.string().max(250).optional().default(''),
-  imageUrl: z.string().url('Must be a valid image URL'),
+  imageUrl: z.string().optional().default(''),
+  mobileImageUrl: z.string().optional().default(''),
+  webImageUrl: z.string().optional().default(''),
   ctaText: z.string().max(50).optional().default('Explore'),
   targetType: z.enum(['category', 'creator', 'casting', 'external']).default('category'),
   targetPayload: z.string().min(1, 'targetPayload is required'),
@@ -204,6 +206,7 @@ export const bannerSchema = z.object({
   active: z.boolean().default(true),
   startDate: z.string().optional().nullable(),
   endDate: z.string().optional().nullable(),
+  expiryDate: z.string().optional().nullable(),
 })
 
 export const updateBannerSchema = bannerSchema.partial()

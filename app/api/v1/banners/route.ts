@@ -146,13 +146,34 @@ export async function GET(request: NextRequest) {
       ]
     }
 
+    const platform = queryParam(request, 'platform')?.toLowerCase()
+
     const banners = await bannersCollection
       .find(filter)
       .sort({ displayOrder: 1, createdAt: -1 })
       .toArray()
 
+    const processedBanners = banners.map((b: any) => {
+      const mobileImageUrl = b.mobileImageUrl || b.imageUrl || ''
+      const webImageUrl = b.webImageUrl || b.imageUrl || ''
+      let activeImage = b.imageUrl || mobileImageUrl || webImageUrl
+
+      if (platform === 'web' && webImageUrl) {
+        activeImage = webImageUrl
+      } else if (platform === 'mobile' && mobileImageUrl) {
+        activeImage = mobileImageUrl
+      }
+
+      return {
+        ...b,
+        imageUrl: activeImage,
+        mobileImageUrl,
+        webImageUrl,
+      }
+    })
+
     return NextResponse.json(
-      successResponse(serialize(banners)),
+      successResponse(serialize(processedBanners)),
       {
         headers: {
           'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',

@@ -24,13 +24,20 @@ export async function POST(request: NextRequest) {
   try {
     const validatedData = await parseBody(request, bannerSchema)
 
-    const db = await connectDb()
+    const mobileImageUrl = validatedData.mobileImageUrl || validatedData.imageUrl || ''
+    const webImageUrl = validatedData.webImageUrl || validatedData.imageUrl || ''
+    const imageUrl = mobileImageUrl || webImageUrl || validatedData.imageUrl || ''
+
     const bannerDoc = {
       ...validatedData,
+      imageUrl,
+      mobileImageUrl,
+      webImageUrl,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
 
+    const db = await connectDb()
     const result = await db.collection('banners').insertOne(bannerDoc)
 
     return NextResponse.json(

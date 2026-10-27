@@ -31,9 +31,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const validatedData = await parseBody(request, updateBannerSchema)
 
     const db = await connectDb()
-    const updateDoc = {
+    const updateDoc: Record<string, any> = {
       ...validatedData,
       updatedAt: new Date(),
+    }
+    if (validatedData.mobileImageUrl && !validatedData.imageUrl) {
+      updateDoc.imageUrl = validatedData.mobileImageUrl
+    } else if (validatedData.webImageUrl && !validatedData.imageUrl) {
+      updateDoc.imageUrl = validatedData.webImageUrl
     }
 
     const result = await db.collection('banners').findOneAndUpdate(
