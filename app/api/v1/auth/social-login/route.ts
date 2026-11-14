@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuth } from 'firebase-admin/auth'
-import { cert, getApps, initializeApp } from 'firebase-admin/app'
 import { z } from 'zod'
 import { connectDb } from '@/lib/db'
 import { createAccessToken, createRefreshToken } from '@/lib/auth'
 import { successResponse } from '@/lib/api-response'
 import { handleApiError } from '@/lib/middleware'
 import { parseBody, serialize } from '@/lib/route-utils'
+import { verifyFirebaseIdToken } from '@/lib/firebase-verify'
 
 const socialLoginSchema = z.object({
   idToken: z.string().min(1, 'Firebase ID token is required'),
@@ -14,25 +13,6 @@ const socialLoginSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
 })
-
-function getFirebaseAdminAuth() {
-  const serviceAccountJson =
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY ||
-    process.env.FIREBASE_SERVICE_ACCOUNT
-  if (!serviceAccountJson) {
-    throw new Error('Firebase Admin service account is not configured')
-  }
-
-  const serviceAccount = JSON.parse(serviceAccountJson)
-  const projectId = process.env.FIREBASE_PROJECT_ID || 'dmw-models-app'
-  const existingApp = getApps().find((app) => app.name === 'bookshoot-auth')
-  const app = existingApp || initializeApp({
-    credential: cert(serviceAccount),
-    projectId,
-  }, 'bookshoot-auth')
-
-  return getAuth(app)
-}
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -48,7 +28,7 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   try {
     const { idToken, provider, firstName, lastName } = await parseBody(request, socialLoginSchema)
-    const firebaseUser = await getFirebaseAdminAuth().verifyIdToken(idToken)
+    const firebaseUser = await verifyFirebaseIdToken(idToken)
     if (!firebaseUser.uid) {
       return NextResponse.json(
         { success: false, message: 'Invalid Firebase ID token.' },
