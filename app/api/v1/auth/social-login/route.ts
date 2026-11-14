@@ -94,10 +94,37 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = user._id.toString()
-    const isProfileCompleted = Boolean(
-      user.isProfileCompleted === true ||
-      (user.firstName && user.firstName.trim().length > 0 && user.role && user.phoneNumber),
-    )
+
+    // Determine if profile is completed
+    let isProfileCompleted = user.isProfileCompleted === true
+    if (!isProfileCompleted) {
+      if (!isNewUser) {
+        // Existing registered user: check if they already have a name & role
+        const hasNameAndRole = Boolean(
+          user.firstName &&
+          user.firstName.trim().length > 0 &&
+          user.role &&
+          user.role !== 'none'
+        )
+
+        // Or if they already have a model/business profile in the database
+        const hasExistingProfile =
+          (await db.collection('modelProfiles').findOne({
+            $or: [{ userId: user._id }, { userId }],
+          })) ||
+          (await db.collection('businessProfiles').findOne({
+            $or: [{ userId: user._id }, { userId }],
+          }))
+
+        if (hasNameAndRole || hasExistingProfile) {
+          isProfileCompleted = true
+          await db.collection('users').updateOne(
+            { _id: user._id },
+            { $set: { isProfileCompleted: true, updatedAt: now } },
+          )
+        }
+      }
+    }
     const { passwordHash, ...safeUser } = user
 
     const session = {
