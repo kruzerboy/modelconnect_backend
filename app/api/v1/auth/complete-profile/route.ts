@@ -95,6 +95,21 @@ export async function POST(request: NextRequest) {
         if (!defaultBio) {
           defaultBio = 'Certified Drone Pilot & Aerial Cinematographer. Specializing in 4K aerial shots, landscape, architecture, and FPV cinematography.'
         }
+      } else if (role === 'editor') {
+        defaultSpecialties = ['Video Editing', 'Color Grading', 'Motion Graphics', 'Sound Design', 'Reels & Shorts']
+        if (!defaultBio) {
+          defaultBio = 'Professional Video Editor & Post-Production Artist. Specializing in color grading, VFX, sound design, commercial edits, and viral short-form reels.'
+        }
+      } else if (role === 'influencer') {
+        defaultSpecialties = ['Brand Collaboration', 'Instagram Reels', 'Lifestyle & Fashion', 'Product Reviews', 'Sponsored Content']
+        if (!defaultBio) {
+          defaultBio = 'Social Media Influencer & Content Creator. Creating high-engagement Reels, lifestyle campaigns, brand collaborations, and sponsored content.'
+        }
+      } else if (role === 'developer') {
+        defaultSpecialties = ['Mobile App Dev', 'Web Development', 'Flutter', 'React', 'Full-Stack APIs']
+        if (!defaultBio) {
+          defaultBio = 'Freelance Software & App Developer. Building high-performance mobile apps, responsive web platforms, backend APIs, and modern UI/UX.'
+        }
       }
 
       await db.collection('modelProfiles').updateOne(

@@ -10,8 +10,14 @@ export async function GET(request: NextRequest) {
     const db = await connectDb()
     const user = await db.collection('users').findOne({ _id: objectId(auth.userId) }, { projection: { passwordHash: 0 } })
     if (!user) return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found' }, timestamp: new Date().toISOString() }, { status: 404 })
-    const profileCollection = auth.role === 'model' ? 'modelProfiles' : 'businessProfiles'
+    const isBusiness = auth.role === 'business'
+    const profileCollection = isBusiness ? 'businessProfiles' : 'modelProfiles'
     const profile = await db.collection(profileCollection).findOne({ userId: auth.userId })
+    if (profile && user) {
+      if (!profile.socialHandle && user.socialHandle) profile.socialHandle = user.socialHandle
+      if (!profile.roleTag && user.role) profile.roleTag = user.role
+      if (!profile.phoneNumber && user.phoneNumber) profile.phoneNumber = user.phoneNumber
+    }
     return NextResponse.json(successResponse({ user: serialize(user), profile: serialize(profile) }))
   } catch (error) { return handleApiError(error) }
 }

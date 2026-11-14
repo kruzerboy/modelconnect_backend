@@ -1,7 +1,7 @@
 import { connectDb } from '@/lib/db'
 
 export interface PushNotificationPayload {
-  targetRole: 'model' | 'camera' | 'drone' | string
+  targetRole: 'model' | 'camera' | 'drone' | 'editor' | 'developer' | 'influencer' | string
   opportunityId: string
   title: string
   businessName: string
@@ -130,7 +130,17 @@ export async function sendRolePushNotification(payload: PushNotificationPayload)
       return { sent: 0, failed: 0 }
     }
 
-    const roleName = targetRole === 'camera' ? 'Camera Crew' : (targetRole === 'drone' ? 'Drone Pilot' : 'Model')
+    const roleName = targetRole === 'camera'
+      ? 'Camera Crew'
+      : (targetRole === 'drone'
+          ? 'Drone Pilot'
+          : (targetRole === 'editor'
+              ? 'Video Editor'
+              : (targetRole === 'influencer'
+                  ? 'Influencer & Creator'
+                  : (targetRole === 'developer'
+                      ? 'Freelance Developer'
+                      : 'Model'))))
     const notifTitle = `New ${roleName} Opportunity!`
     const notifBody = `${payload.businessName} just posted: "${payload.title}"${payload.city ? ` in ${payload.city}` : ''}. Tap to review and apply.`
 

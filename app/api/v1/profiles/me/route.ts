@@ -8,11 +8,12 @@ import { parseBody, serialize, objectId } from '@/lib/route-utils'
 export async function PUT(request: NextRequest) {
   try {
     const auth = await requireAuth(request)
-    const input = auth.role === 'model'
-      ? await parseBody(request, modelProfileSchema)
-      : await parseBody(request, businessProfileSchema)
+    const isBusiness = auth.role === 'business'
+    const input = isBusiness
+      ? await parseBody(request, businessProfileSchema)
+      : await parseBody(request, modelProfileSchema)
     const db = await connectDb()
-    const collection = auth.role === 'model' ? 'modelProfiles' : 'businessProfiles'
+    const collection = isBusiness ? 'businessProfiles' : 'modelProfiles'
     const now = new Date()
     const profile = await db.collection(collection).findOneAndUpdate(
       { userId: auth.userId },
@@ -28,19 +29,24 @@ export async function GET(request: NextRequest) {
   try {
     const auth = await requireAuth(request)
     const db = await connectDb()
-    const collection = auth.role === 'model' ? 'modelProfiles' : 'businessProfiles'
+    const isBusiness = auth.role === 'business'
+    const collection = isBusiness ? 'businessProfiles' : 'modelProfiles'
     let profile = await db.collection(collection).findOne({ userId: auth.userId })
+    const user = await db.collection('users').findOne({ _id: objectId(auth.userId) })
+
     if (!profile) {
-      const user = await db.collection('users').findOne({ _id: objectId(auth.userId) })
       const now = new Date()
       const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : ''
-      const defaultProfile = auth.role === 'model'
+      const defaultProfile = !isBusiness
         ? {
             userId: auth.userId,
-            name: fullName || 'Model Talent',
+            name: fullName || 'Creative Talent',
             email: user?.email || '',
+            phoneNumber: user?.phoneNumber || '',
+            socialHandle: user?.socialHandle || '',
             bio: '',
             specialties: [],
+            roleTag: auth.role || 'talent',
             location: { city: '', country: '' },
             createdAt: now,
             updatedAt: now,
@@ -49,9 +55,11 @@ export async function GET(request: NextRequest) {
             userId: auth.userId,
             companyName: fullName || 'Business Account',
             email: user?.email || '',
+            phoneNumber: user?.phoneNumber || '',
+            socialHandle: user?.socialHandle || '',
             industry: '',
             description: '',
-            website: '',
+            website: user?.socialHandle || '',
             location: { city: '', country: '' },
             createdAt: now,
             updatedAt: now,
@@ -59,6 +67,13 @@ export async function GET(request: NextRequest) {
       await db.collection(collection).insertOne(defaultProfile)
       profile = await db.collection(collection).findOne({ userId: auth.userId })
     }
+
+    if (profile && user) {
+      if (!profile.socialHandle && user.socialHandle) profile.socialHandle = user.socialHandle
+      if (!profile.roleTag && user.role) profile.roleTag = user.role
+      if (!profile.phoneNumber && user.phoneNumber) profile.phoneNumber = user.phoneNumber
+    }
+
     return NextResponse.json(successResponse(serialize(profile)))
   } catch (error) { return handleApiError(error) }
 }

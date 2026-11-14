@@ -154,52 +154,52 @@ export async function GET(request: NextRequest) {
 
     let query: any = { active: { $ne: false } }
     if (targetAudience && targetAudience !== 'all') {
-      if (targetAudience === 'model' || targetAudience === 'talent') {
-        query.targetAudience = { $in: ['model', 'talent', 'camera', 'drone', 'all'] }
-      } else {
-        query.targetAudience = { $in: [targetAudience, 'all'] }
-      }
-    }
-
-    let plans = await plansCollection
-      .find(query)
-      .sort({ displayOrder: 1, createdAt: 1 })
-      .toArray()
-
-    // If database has no plans at all, seed with full roster
-    const totalCount = await plansCollection.countDocuments({})
-    if (totalCount === 0) {
-      await plansCollection.insertMany(DEFAULT_PLANS)
-      plans = await plansCollection
-        .find(query)
-        .sort({ displayOrder: 1 })
-        .toArray()
-    }
-
-    // Fallback if query returned 0 from database
-    if (plans.length === 0) {
-      plans = (DEFAULT_PLANS as any[]).filter((p) => {
-        if (!targetAudience || targetAudience === 'all') return true
-        if (targetAudience === 'model' || targetAudience === 'talent') {
-          return (
-            p.targetAudience === 'model' ||
-            p.targetAudience === 'camera' ||
-            p.targetAudience === 'all'
-          )
+        if (['model', 'talent', 'camera', 'drone', 'editor', 'developer', 'influencer'].includes(targetAudience)) {
+          query.targetAudience = { $in: ['model', 'talent', 'camera', 'drone', 'editor', 'developer', 'influencer', 'all'] }
+        } else {
+          query.targetAudience = { $in: [targetAudience, 'all'] }
         }
-        return p.targetAudience === targetAudience || p.targetAudience === 'all'
-      })
-    }
-
-    return NextResponse.json(
-      successResponse(serialize(plans)),
-      {
-        headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-        },
       }
-    )
-  } catch (error) {
-    return handleApiError(error)
+
+      let plans = await plansCollection
+        .find(query)
+        .sort({ displayOrder: 1, createdAt: 1 })
+        .toArray()
+
+      // If database has no plans at all, seed with full roster
+      const totalCount = await plansCollection.countDocuments({})
+      if (totalCount === 0) {
+        await plansCollection.insertMany(DEFAULT_PLANS)
+        plans = await plansCollection
+          .find(query)
+          .sort({ displayOrder: 1 })
+          .toArray()
+      }
+
+      // Fallback if query returned 0 from database
+      if (plans.length === 0) {
+        plans = (DEFAULT_PLANS as any[]).filter((p) => {
+          if (!targetAudience || targetAudience === 'all') return true
+          if (targetAudience === 'model' || targetAudience === 'talent') {
+            return (
+              p.targetAudience === 'model' ||
+              p.targetAudience === 'camera' ||
+              p.targetAudience === 'all'
+            )
+          }
+          return p.targetAudience === targetAudience || p.targetAudience === 'all'
+        })
+      }
+
+      return NextResponse.json(
+        successResponse(serialize(plans)),
+        {
+          headers: {
+            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+          },
+        }
+      )
+    } catch (error) {
+      return handleApiError(error)
+    }
   }
-}

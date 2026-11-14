@@ -80,6 +80,51 @@ export async function POST(request: NextRequest) {
           createdAt: now,
           updatedAt: now,
         })
+      } else if (input.role === 'editor') {
+        const name = `${input.firstName} ${input.lastName}`.trim() || 'Video Editor'
+        await db.collection('modelProfiles').insertOne({
+          userId,
+          name,
+          email,
+          phoneNumber,
+          socialHandle,
+          bio: 'Professional Video Editor & Post-Production Artist. Specializing in color grading, VFX, sound design, commercial edits, and viral short-form reels.',
+          specialties: ['Video Editing', 'Color Grading', 'Motion Graphics', 'Sound Design', 'Reels & Shorts'],
+          location: { city: '', country: '' },
+          roleTag: 'editor',
+          createdAt: now,
+          updatedAt: now,
+        })
+      } else if (input.role === 'influencer') {
+        const name = `${input.firstName} ${input.lastName}`.trim() || 'Influencer & Creator'
+        await db.collection('modelProfiles').insertOne({
+          userId,
+          name,
+          email,
+          phoneNumber,
+          socialHandle,
+          bio: 'Social Media Influencer & Content Creator. Creating high-engagement Reels, lifestyle campaigns, brand collaborations, and sponsored content.',
+          specialties: ['Brand Collaboration', 'Instagram Reels', 'Lifestyle & Fashion', 'Product Reviews', 'Sponsored Content'],
+          location: { city: '', country: '' },
+          roleTag: 'influencer',
+          createdAt: now,
+          updatedAt: now,
+        })
+      } else if (input.role === 'developer') {
+        const name = `${input.firstName} ${input.lastName}`.trim() || 'Freelance Developer'
+        await db.collection('modelProfiles').insertOne({
+          userId,
+          name,
+          email,
+          phoneNumber,
+          socialHandle,
+          bio: 'Freelance Software & App Developer. Building high-performance mobile apps, responsive web platforms, backend APIs, and modern UI/UX.',
+          specialties: ['Mobile App Dev', 'Web Development', 'Flutter', 'React', 'Full-Stack APIs'],
+          location: { city: '', country: '' },
+          roleTag: 'developer',
+          createdAt: now,
+          updatedAt: now,
+        })
       } else {
         const name = `${input.firstName} ${input.lastName}`.trim() || 'Model Talent'
         await db.collection('modelProfiles').insertOne({

@@ -4,8 +4,8 @@ import { z } from 'zod'
 export const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum(['model', 'business', 'camera', 'drone'], {
-    message: 'Role must be "model", "business", "camera", or "drone"',
+  role: z.enum(['model', 'business', 'camera', 'drone', 'editor', 'developer', 'influencer'], {
+    message: 'Role must be "model", "business", "camera", "drone", "editor", "developer", or "influencer"',
   }),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
@@ -30,8 +30,8 @@ export const phoneLoginSchema = z.object({
 })
 
 export const completeProfileSchema = z.object({
-  role: z.enum(['model', 'business', 'camera', 'drone'], {
-    message: 'Role must be "model", "business", "camera", or "drone"',
+  role: z.enum(['model', 'business', 'camera', 'drone', 'editor', 'developer', 'influencer'], {
+    message: 'Role must be "model", "business", "camera", "drone", "editor", "developer", or "influencer"',
   }),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
@@ -121,8 +121,8 @@ export const availabilitySchema = z.object({
 export const opportunitySchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   description: z.string().min(1, 'Description is required'),
-  targetRole: z.enum(['model', 'camera', 'drone']).optional().default('model'),
-  target_role: z.enum(['model', 'camera', 'drone']).optional(),
+  targetRole: z.enum(['model', 'camera', 'drone', 'editor', 'developer', 'influencer']).optional().default('model'),
+  target_role: z.enum(['model', 'camera', 'drone', 'editor', 'developer', 'influencer']).optional(),
   isPriceOnCall: z.boolean().optional(),
   is_price_on_call: z.boolean().optional(),
   type: z.enum(['shoot', 'campaign', 'test', 'collaboration', 'other']).default('shoot'),
@@ -215,7 +215,7 @@ export const updateBannerSchema = bannerSchema.partial()
 export const featuredSlotSchema = z.object({
   userId: z.string().min(1, 'User ID is required'),
   slotOrder: z.number().int().min(1).max(50).default(1),
-  featuredRole: z.enum(['model', 'camera', 'drone', 'business', 'all']).default('all'),
+  featuredRole: z.enum(['model', 'camera', 'drone', 'editor', 'developer', 'influencer', 'business', 'all']).default('all'),
   curatorNote: z.string().max(300).optional().default('Curator Choice'),
   badge: z.string().max(50).optional().default('Featured'),
   active: z.boolean().default(true),
@@ -233,7 +233,7 @@ export const planSchema = z.object({
   includedPosts: z.number().int().min(0).optional().default(1),
   postLimit: z.number().int().min(0).optional().default(1),
   maxTalentsPerPost: z.number().int().min(0).optional().default(2),
-  targetAudience: z.enum(['all', 'model', 'camera', 'drone', 'business']).default('all'),
+  targetAudience: z.enum(['all', 'model', 'camera', 'drone', 'editor', 'developer', 'influencer', 'business']).default('all'),
   tagline: z.string().max(300).optional().default(''),
   features: z.array(z.string()).default([]),
   badge: z.string().max(50).optional().default(''),
