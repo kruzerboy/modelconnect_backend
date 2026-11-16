@@ -26,8 +26,6 @@ const DEFAULT_PLANS = [
     highlight: true,
     active: true,
     displayOrder: 1,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   },
   {
     name: 'Model Elite VIP',
@@ -49,9 +47,51 @@ const DEFAULT_PLANS = [
     highlight: false,
     active: true,
     displayOrder: 2,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   },
+
+  // ── Influencer & Content Creator Membership Plans ──
+  {
+    name: 'Influencer Pro Creator',
+    code: 'influencer_pro',
+    price: 999,
+    billingCycle: 'monthly',
+    includedPosts: 50,
+    maxTalentsPerPost: 0,
+    targetAudience: 'influencer',
+    features: [
+      'Brand Collaboration & Campaign Applications',
+      'Verified Influencer Badge on Profile',
+      'Live Media Kit & Social Metrics Integration',
+      'Direct WhatsApp & Agency Collab Requests',
+      'Priority Shortlist in Brand Discovery Feed',
+    ],
+    badge: 'CREATOR PRO',
+    highlight: true,
+    active: true,
+    displayOrder: 3,
+  },
+  {
+    name: 'Influencer Elite VIP',
+    code: 'influencer_elite',
+    price: 1999,
+    billingCycle: 'monthly',
+    includedPosts: 100,
+    maxTalentsPerPost: 0,
+    targetAudience: 'influencer',
+    features: [
+      'All Influencer Pro Features Included',
+      'Home Spotlight Banner Promotion for 30 Days',
+      'Direct Invitations to Sponsored Brand Shoots',
+      'Dedicated Talent Manager for Brand Deals',
+      'Zero Commission on Sponsorship Contracts',
+    ],
+    badge: 'VIP CREATOR',
+    highlight: false,
+    active: true,
+    displayOrder: 4,
+  },
+
+  // ── Camera & Cine Crew Plans ──
   {
     name: 'Camera & Cine Pro',
     code: 'camera_pro',
@@ -70,9 +110,66 @@ const DEFAULT_PLANS = [
     badge: 'CREW PRO',
     highlight: false,
     active: true,
-    displayOrder: 3,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    displayOrder: 5,
+  },
+  {
+    name: 'Camera Elite VIP',
+    code: 'camera_elite',
+    price: 2499,
+    billingCycle: 'monthly',
+    includedPosts: 200,
+    maxTalentsPerPost: 0,
+    targetAudience: 'camera',
+    features: [
+      'All Camera Pro Features Included',
+      'Priority Hire on Feature Film & OTT Productions',
+      'Equipment Rental Showcase on Home Feed',
+      'Direct Production House Concierge',
+    ],
+    badge: 'CINE ELITE',
+    highlight: false,
+    active: true,
+    displayOrder: 6,
+  },
+
+  // ── Drone & Video Editor Plans ──
+  {
+    name: 'Drone Master Pro',
+    code: 'drone_pro',
+    price: 1999,
+    billingCycle: 'monthly',
+    includedPosts: 100,
+    maxTalentsPerPost: 0,
+    targetAudience: 'drone',
+    features: [
+      'Unlimited Aerial / Drone Shoot Applications',
+      'DGCA Verified Pilot Badge',
+      'Featured in Drone Specialist Directory',
+      'Direct Inquiries from Real Estate & Film Clients',
+    ],
+    badge: 'DRONE PRO',
+    highlight: false,
+    active: true,
+    displayOrder: 7,
+  },
+  {
+    name: 'Video Editor Pro',
+    code: 'editor_pro',
+    price: 999,
+    billingCycle: 'monthly',
+    includedPosts: 100,
+    maxTalentsPerPost: 0,
+    targetAudience: 'editor',
+    features: [
+      'Unlimited Post-Production & Reel Editing Gigs',
+      'Verified Post-Production Specialist Badge',
+      'Showreel / Video Portfolio Showcase',
+      'Direct Client Messaging & File Delivery Unlock',
+    ],
+    badge: 'EDITOR PRO',
+    highlight: false,
+    active: true,
+    displayOrder: 8,
   },
 
   // ── Business, Casting & Studio Plans ──
@@ -94,9 +191,7 @@ const DEFAULT_PLANS = [
     badge: 'Starter',
     highlight: false,
     active: true,
-    displayOrder: 4,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    displayOrder: 9,
   },
   {
     name: 'Production Pack',
@@ -116,9 +211,7 @@ const DEFAULT_PLANS = [
     badge: 'Most Popular',
     highlight: true,
     active: true,
-    displayOrder: 5,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    displayOrder: 10,
   },
   {
     name: 'Studio Enterprise',
@@ -138,9 +231,7 @@ const DEFAULT_PLANS = [
     badge: 'Best Value',
     highlight: false,
     active: true,
-    displayOrder: 6,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    displayOrder: 11,
   },
 ]
 
@@ -152,54 +243,46 @@ export async function GET(request: NextRequest) {
     const db = await connectDb()
     const plansCollection = db.collection('plans')
 
-    let query: any = { active: { $ne: false } }
-    if (targetAudience && targetAudience !== 'all') {
-        if (['model', 'talent', 'camera', 'drone', 'editor', 'developer', 'influencer'].includes(targetAudience)) {
-          query.targetAudience = { $in: ['model', 'talent', 'camera', 'drone', 'editor', 'developer', 'influencer', 'all'] }
-        } else {
-          query.targetAudience = { $in: [targetAudience, 'all'] }
-        }
-      }
-
-      let plans = await plansCollection
-        .find(query)
-        .sort({ displayOrder: 1, createdAt: 1 })
-        .toArray()
-
-      // If database has no plans at all, seed with full roster
-      const totalCount = await plansCollection.countDocuments({})
-      if (totalCount === 0) {
-        await plansCollection.insertMany(DEFAULT_PLANS)
-        plans = await plansCollection
-          .find(query)
-          .sort({ displayOrder: 1 })
-          .toArray()
-      }
-
-      // Fallback if query returned 0 from database
-      if (plans.length === 0) {
-        plans = (DEFAULT_PLANS as any[]).filter((p) => {
-          if (!targetAudience || targetAudience === 'all') return true
-          if (targetAudience === 'model' || targetAudience === 'talent') {
-            return (
-              p.targetAudience === 'model' ||
-              p.targetAudience === 'camera' ||
-              p.targetAudience === 'all'
-            )
-          }
-          return p.targetAudience === targetAudience || p.targetAudience === 'all'
-        })
-      }
-
-      return NextResponse.json(
-        successResponse(serialize(plans)),
+    // Upsert default plans into MongoDB if not present by code
+    for (const plan of DEFAULT_PLANS) {
+      await plansCollection.updateOne(
+        { code: plan.code },
         {
-          headers: {
-            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+          $setOnInsert: {
+            ...plan,
+            createdAt: new Date(),
+            updatedAt: new Date(),
           },
-        }
+        },
+        { upsert: true }
       )
-    } catch (error) {
-      return handleApiError(error)
     }
+
+    const query: Record<string, unknown> = { active: { $ne: false } }
+    if (targetAudience && targetAudience !== 'all') {
+      const normalized = targetAudience.toLowerCase().trim()
+      if (['model', 'talent', 'camera', 'drone', 'editor', 'developer', 'influencer'].includes(normalized)) {
+        // Return plans for the specific role OR general talent/all plans
+        query.targetAudience = { $in: [normalized, 'talent', 'all'] }
+      } else {
+        query.targetAudience = { $in: [normalized, 'all'] }
+      }
+    }
+
+    const plans = await plansCollection
+      .find(query)
+      .sort({ displayOrder: 1, createdAt: 1 })
+      .toArray()
+
+    return NextResponse.json(
+      successResponse(serialize(plans)),
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        },
+      }
+    )
+  } catch (error) {
+    return handleApiError(error)
   }
+}
