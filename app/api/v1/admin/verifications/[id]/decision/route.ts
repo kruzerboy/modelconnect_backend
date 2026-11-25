@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDb } from '@/lib/db'
-import { handleApiError } from '@/lib/middleware'
+import { handleApiError, requireAdmin } from '@/lib/middleware'
 import { successResponse, ApiError, ERROR_CODES } from '@/lib/api-response'
 import { objectId } from '@/lib/route-utils'
 
@@ -10,6 +10,7 @@ interface RouteParams {
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    await requireAdmin(request)
     const { id } = await params
     const body = await request.json().catch(() => ({}))
     const { status, notes } = body
@@ -39,12 +40,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       try {
         await db.collection('users').updateOne(
           { _id: objectId(updatedProf.userId) },
-          { $set: { isVerified: isApproved, verified: isApproved } }
+          { $set: { isVerified: isApproved, verified: isApproved, updatedAt: new Date() } }
         )
       } catch {
         await db.collection('users').updateOne(
           { id: updatedProf.userId },
-          { $set: { isVerified: isApproved, verified: isApproved } }
+          { $set: { isVerified: isApproved, verified: isApproved, updatedAt: new Date() } }
         )
       }
     }

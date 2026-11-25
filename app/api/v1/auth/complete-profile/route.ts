@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     const role = input.role
     const socialHandle = input.socialHandle?.trim() || user.socialHandle || null
     const city = input.city?.trim() || ''
+    const avatarUrl = (input as any).avatarUrl?.trim() || user.avatarUrl || null
 
     // Update user record
     await db.collection('users').updateOne(
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
           firstName,
           lastName,
           socialHandle,
+          ...(avatarUrl ? { avatarUrl } : {}),
           isProfileCompleted: true,
           updatedAt: now,
         },
@@ -122,12 +124,14 @@ export async function POST(request: NextRequest) {
             socialHandle,
             roleTag: role,
             location: { city, country: 'India' },
+            ...(avatarUrl ? { avatarUrl } : {}),
             updatedAt: now,
           },
           $setOnInsert: {
             userId,
             bio: defaultBio,
             specialties: defaultSpecialties,
+            portfolio: avatarUrl ? [avatarUrl] : [],
             createdAt: now,
           },
         },

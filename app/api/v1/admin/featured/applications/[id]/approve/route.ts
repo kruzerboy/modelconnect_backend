@@ -58,6 +58,26 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       },
     })
 
+    // Synchronize spotlight state to modelProfiles and businessProfiles
+    const spotlightFields = {
+      isFeatured: true,
+      isSpotlight: true,
+      spotlightActive: true,
+      spotlightSlot: slotOrder,
+      spotlightBadge: body.badge || appDoc.badgeRequested || 'FEATURED',
+      spotlightExpiresAt: expiryDate,
+      spotlightDurationDays: durationDays,
+      updatedAt: new Date(),
+    }
+    await db.collection('modelProfiles').updateOne(
+      { $or: [{ userId: appDoc.userId }, { userId: (ObjectId.isValid(appDoc.userId) ? new ObjectId(appDoc.userId) : appDoc.userId) }] as any },
+      { $set: spotlightFields }
+    )
+    await db.collection('businessProfiles').updateOne(
+      { $or: [{ userId: appDoc.userId }, { userId: (ObjectId.isValid(appDoc.userId) ? new ObjectId(appDoc.userId) : appDoc.userId) }] as any },
+      { $set: spotlightFields }
+    )
+
     return NextResponse.json(
       successResponse(null, 'Application approved and profile featured in spotlight successfully')
     )

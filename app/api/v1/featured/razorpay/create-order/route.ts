@@ -16,7 +16,14 @@ export async function POST(request: NextRequest) {
     const durationDays = Number(body.durationDays) || 14
     const discipline = body.discipline || 'model'
 
-    const amountInRupees = PRICING_TIERS[durationDays] || 1799
+    // Look up dynamic price from spotlightPlans collection (or fallback to PRICING_TIERS)
+    const db = await connectDb()
+    const dynamicPlan = await db.collection('spotlightPlans').findOne({
+      durationDays,
+      active: { $ne: false },
+    })
+
+    const amountInRupees = dynamicPlan?.price ?? (PRICING_TIERS[durationDays] || 1799)
     const amountInPaise = amountInRupees * 100
 
     const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_bookshoot_demo'

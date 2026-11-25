@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDb } from '@/lib/db'
 import { bannerSchema } from '@/lib/schemas'
-import { handleApiError } from '@/lib/middleware'
+import { handleApiError, requireAdmin } from '@/lib/middleware'
 import { successResponse, ApiError, ERROR_CODES } from '@/lib/api-response'
 import { parseBody, serialize } from '@/lib/route-utils'
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAdmin(request)
     const db = await connectDb()
     const banners = await db
       .collection('banners')
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAdmin(request)
     const validatedData = await parseBody(request, bannerSchema)
 
     const mobileImageUrl = validatedData.mobileImageUrl || validatedData.imageUrl || ''

@@ -1,0 +1,32 @@
+export const DEFAULT_SPOTLIGHT_PLANS = [
+  {
+    durationDays: 7,
+    price: 999,
+    title: '7 Days Flash',
+    description: 'Featured on the home feed spotlight carousel for 1 week',
+    badge: 'STARTER',
+    highlight: false,
+    active: true,
+    displayOrder: 1,
+  },
+  {
+    durationDays: 14,
+    price: 1799,
+    title: '14 Days Popular',
+    description: 'Double your visibility during key casting cycles for 2 weeks',
+    badge: 'POPULAR',
+    highlight: true,
+    active: true,
+    displayOrder: 2,
+  },
+  {
+    durationDays: 30,
+    price: 2999,
+    title: '30 Days VIP Spotlight',
+    description: 'Full month high-priority placement at the top of the feed',
+    badge: 'BEST VALUE',
+    highlight: false,
+    active: true,
+    displayOrder: 3,
+  },
+]

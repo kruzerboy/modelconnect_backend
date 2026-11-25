@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDb } from '@/lib/db'
-import { handleApiError } from '@/lib/middleware'
+import { handleApiError, requireAdmin } from '@/lib/middleware'
 import { successResponse } from '@/lib/api-response'
 import { serialize } from '@/lib/route-utils'
 import { ObjectId } from 'mongodb'
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAdmin(request)
     const db = await connectDb()
     const appsCollection = db.collection('featuredApplications')
     const usersCollection = db.collection('users')

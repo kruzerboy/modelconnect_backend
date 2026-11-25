@@ -1,0 +1,11 @@
+import { NextResponse } from 'next/server'
+
+export async function GET() {
+  return NextResponse.json({
+    status: 'healthy',
+    service: 'BookShoot Production API Gateway',
+    version: '1.0.0',
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+  })
+}

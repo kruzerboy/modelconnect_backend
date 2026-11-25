@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ObjectId } from 'mongodb'
 import { connectDb } from '@/lib/db'
 import { updatePlanSchema } from '@/lib/schemas'
-import { handleApiError } from '@/lib/middleware'
+import { handleApiError, requireAdmin } from '@/lib/middleware'
 import { successResponse, ApiError, ERROR_CODES } from '@/lib/api-response'
 import { parseBody, serialize } from '@/lib/route-utils'
 
@@ -20,6 +20,7 @@ function buildPlanQuery(id: string) {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    await requireAdmin(request)
     const { id } = await params
     const db = await connectDb()
     const plan = await db.collection('plans').findOne(buildPlanQuery(id))
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
+    await requireAdmin(request)
     const { id } = await params
     const validatedData = await parseBody(request, updatePlanSchema)
 
@@ -92,6 +94,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    await requireAdmin(request)
     const { id } = await params
     const db = await connectDb()
     const result = await db.collection('plans').deleteOne(buildPlanQuery(id))

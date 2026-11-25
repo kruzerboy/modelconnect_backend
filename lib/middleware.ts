@@ -41,6 +41,10 @@ export async function requireRole(request: NextRequest, allowedRoles: string[]) 
   return auth
 }
 
+export async function requireAdmin(request: NextRequest) {
+  return requireRole(request, ['admin', 'superadmin'])
+}
+
 export function handleApiError(error: unknown): NextResponse {
   console.error('[API Error]', error)
 

@@ -55,18 +55,18 @@ export async function GET(request: NextRequest) {
               'Featured Talent'
 
           const avatar = isBiz
-            ? bizProf?.logoUrl || user?.profilePicture || user?.avatarUrl
+            ? bizProf?.logoUrl || user?.profilePicture || user?.avatarUrl || null
             : user?.profilePicture ||
               user?.avatarUrl ||
               (modelProf?.portfolio && modelProf.portfolio.length > 0
                 ? modelProf.portfolio[0]
-                : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80')
+                : null)
 
           const photos = isBiz
-            ? bizProf?.portfolio || [avatar]
+            ? bizProf?.portfolio || (avatar ? [avatar] : [])
             : modelProf?.portfolio && modelProf.portfolio.length > 0
             ? modelProf.portfolio
-            : [avatar]
+            : avatar ? [avatar] : []
 
           return {
             id: slot.userId || slot._id?.toString(),
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
             u?.avatarUrl ||
             (p.portfolio && p.portfolio.length > 0
               ? p.portfolio[0]
-              : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80')
+              : null)
 
           return {
             id: p.userId,
@@ -150,7 +150,8 @@ export async function GET(request: NextRequest) {
         topBiz.map(async (b) => {
           const avatar =
             b.logoUrl ||
-            'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80'
+            b.coverPhotoUrl ||
+            (Array.isArray(b.portfolio) && b.portfolio.length > 0 ? b.portfolio[0] : null)
           return {
             id: b.userId,
             name: b.companyName || 'Studio & Production',

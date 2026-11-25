@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDb } from '@/lib/db'
 import { featuredSlotSchema } from '@/lib/schemas'
-import { handleApiError } from '@/lib/middleware'
+import { handleApiError, requireAdmin } from '@/lib/middleware'
 import { successResponse, ApiError, ERROR_CODES } from '@/lib/api-response'
 import { parseBody, serialize } from '@/lib/route-utils'
 import { ObjectId } from 'mongodb'
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAdmin(request)
     const db = await connectDb()
     const featuredCollection = db.collection('featuredProfiles')
     const usersCollection = db.collection('users')
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
                 id: user._id?.toString() || user.id,
                 name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username,
                 role: user.role || 'model',
-                avatarUrl: user.profilePicture || user.avatarUrl || null,
+                avatarUrl: user.avatarUrl || user.profilePicture || null,
               }
             : null,
           profile: profile
@@ -64,6 +65,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAdmin(request)
     const validatedData = await parseBody(request, featuredSlotSchema)
 
     const db = await connectDb()
@@ -81,6 +83,24 @@ export async function POST(request: NextRequest) {
         $setOnInsert: { createdAt: new Date() },
       },
       { upsert: true, returnDocument: 'after' }
+    )
+
+    // Sync to modelProfiles / businessProfiles
+    const syncDoc = {
+      isFeatured: true,
+      isSpotlight: true,
+      spotlightActive: true,
+      spotlightSlot: validatedData.slotOrder,
+      spotlightBadge: validatedData.badge || 'Spotlight Star',
+      updatedAt: new Date(),
+    }
+    await db.collection('modelProfiles').updateOne(
+      { $or: [{ userId: validatedData.userId }, { userId: (ObjectId.isValid(validatedData.userId) ? new ObjectId(validatedData.userId) : validatedData.userId) }] as any },
+      { $set: syncDoc }
+    )
+    await db.collection('businessProfiles').updateOne(
+      { $or: [{ userId: validatedData.userId }, { userId: (ObjectId.isValid(validatedData.userId) ? new ObjectId(validatedData.userId) : validatedData.userId) }] as any },
+      { $set: syncDoc }
     )
 
     return NextResponse.json(
@@ -102,6 +122,16 @@ export async function DELETE(request: NextRequest) {
 
     const db = await connectDb()
     const result = await db.collection('featuredProfiles').deleteOne({ userId })
+
+    // Un-feature profile
+    await db.collection('modelProfiles').updateOne(
+      { $or: [{ userId }, { userId: (ObjectId.isValid(userId) ? new ObjectId(userId) : userId) }] as any },
+      { $set: { isFeatured: false, isSpotlight: false, spotlightActive: false, updatedAt: new Date() } }
+    )
+    await db.collection('businessProfiles').updateOne(
+      { $or: [{ userId }, { userId: (ObjectId.isValid(userId) ? new ObjectId(userId) : userId) }] as any },
+      { $set: { isFeatured: false, isSpotlight: false, spotlightActive: false, updatedAt: new Date() } }
+    )
 
     return NextResponse.json(
       successResponse({ deletedCount: result.deletedCount }, 'Featured slot removed')

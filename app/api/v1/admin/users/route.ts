@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDb } from '@/lib/db'
-import { handleApiError } from '@/lib/middleware'
+import { handleApiError, requireAdmin } from '@/lib/middleware'
 import { successResponse } from '@/lib/api-response'
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAdmin(request)
     const db = await connectDb()
     const users = await db.collection('users').find({}).sort({ createdAt: -1 }).toArray()
 
@@ -17,10 +18,7 @@ export async function GET(request: NextRequest) {
       role: u.role || 'model',
       accountStatus: u.accountStatus || 'active',
       verified: Boolean(u.isVerified || u.verified),
-      avatarUrl:
-        u.profilePicture ||
-        u.avatarUrl ||
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      avatarUrl: u.profilePicture || u.avatarUrl || null,
       joinedDate: u.createdAt
         ? new Date(u.createdAt).toLocaleDateString('en-US', {
             month: 'short',

@@ -35,8 +35,13 @@ function getFirebaseMessaging() {
       const path = require('path')
       const candidatePaths = [
         path.join(process.cwd(), 'dmw-models-app-firebase-adminsdk.json'),
-        path.join(process.cwd(), 'firebase-adminsdk.json'),
+        path.join(process.cwd(), '..', 'dmw-models-app-firebase-adminsdk.json'),
+        path.join(__dirname, 'dmw-models-app-firebase-adminsdk.json'),
+        path.join(__dirname, '..', 'dmw-models-app-firebase-adminsdk.json'),
         path.join(__dirname, '../../dmw-models-app-firebase-adminsdk.json'),
+        path.join(__dirname, '../../../dmw-models-app-firebase-adminsdk.json'),
+        path.join(process.cwd(), 'firebase-adminsdk.json'),
+        path.join(process.cwd(), '..', 'firebase-adminsdk.json'),
       ]
 
       for (const p of candidatePaths) {
@@ -53,18 +58,28 @@ function getFirebaseMessaging() {
 
   if (!serviceAccount) return null
 
+  // Ensure newlines in private_key are unescaped (needed when passed via environment variables)
+  if (serviceAccount.private_key && typeof serviceAccount.private_key === 'string') {
+    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n')
+  }
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { initializeApp, cert, getApps } = require('firebase-admin/app')
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getMessaging } = require('firebase-admin/messaging')
 
-    const app = getApps().length
-      ? getApps()[0]
-      : initializeApp({
+    const appName = 'fcm-push-app'
+    const existing = getApps().find((a: any) => a.name === appName)
+    const app =
+      existing ||
+      initializeApp(
+        {
           credential: cert(serviceAccount),
           projectId,
-        })
+        },
+        appName
+      )
     return getMessaging(app)
   } catch (err) {
     console.warn('[FCM] Failed to initialize Firebase Messaging:', err)
@@ -228,6 +243,24 @@ export async function sendUserPushNotification(payload: UserPushNotificationPayl
           body: payload.body,
         },
         data: sanitizedData,
+        android: {
+          priority: 'high',
+          notification: {
+            channelId: 'opportunity_alerts',
+            sound: 'default',
+            priority: 'high',
+            defaultSound: true,
+            defaultVibrateTimings: true,
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'default',
+              badge: 1,
+            },
+          },
+        },
       })
       return { sent: response.successCount, failed: response.failureCount }
     } else {

@@ -41,6 +41,8 @@
   },
   "overrides": {
     "uuid": "^11.1.1",
-    "brace-expansion": "^5.0.12"
+    "brace-expansion": "^5.0.12",
+    "minimatch": "^11.0.9",
+    "websocket-driver": "^0.8.0"
   }
 }

@@ -20,6 +20,28 @@ export async function PUT(request: NextRequest) {
       { $set: { ...input, userId: auth.userId, updatedAt: now }, $setOnInsert: { createdAt: now } },
       { upsert: true, returnDocument: 'after' }
     )
+
+    const rawPhone = (input as any)?.phoneNumber || (input as any)?.phone
+    if (rawPhone && typeof rawPhone === 'string' && rawPhone.trim()) {
+      await db.collection('users').updateOne(
+        { _id: objectId(auth.userId) },
+        { $set: { phoneNumber: rawPhone.trim(), updatedAt: now } }
+      )
+    }
+
+    const rawAvatar = (input as any)?.avatarUrl
+    if (rawAvatar && typeof rawAvatar === 'string' && rawAvatar.trim()) {
+      const trimmedAvatar = rawAvatar.trim()
+      await db.collection('users').updateOne(
+        { _id: objectId(auth.userId) },
+        { $set: { avatarUrl: trimmedAvatar, profilePicture: trimmedAvatar, updatedAt: now } }
+      )
+      await db.collection('featuredProfiles').updateMany(
+        { $or: [{ userId: auth.userId }, { userId: objectId(auth.userId) }] as any },
+        { $set: { avatarUrl: trimmedAvatar, updatedAt: now } }
+      )
+    }
+
     return NextResponse.json(successResponse(serialize(profile)))
 
   } catch (error) { return handleApiError(error) }
@@ -72,8 +94,64 @@ export async function GET(request: NextRequest) {
       if (!profile.socialHandle && user.socialHandle) profile.socialHandle = user.socialHandle
       if (!profile.roleTag && user.role) profile.roleTag = user.role
       if (!profile.phoneNumber && user.phoneNumber) profile.phoneNumber = user.phoneNumber
+      if (!profile.avatarUrl && user.avatarUrl) profile.avatarUrl = user.avatarUrl
+      if ((!profile.portfolio || profile.portfolio.length === 0) && user.avatarUrl) {
+        profile.portfolio = [user.avatarUrl]
+      }
     }
 
-    return NextResponse.json(successResponse(serialize(profile)))
+    // Check active spotlight status in featuredProfiles
+    const userMatch = [
+      { userId: auth.userId },
+      { userId: objectId(auth.userId) },
+      ...(user ? [{ userId: user._id?.toString() }, { userId: user._id }] : []),
+    ]
+
+    const activeSpotlight = await db.collection('featuredProfiles').findOne({
+      $or: userMatch as any,
+      active: { $ne: false },
+      $and: [
+        {
+          $or: [
+            { expiryDate: null },
+            { expiryDate: { $exists: false } },
+            { expiryDate: { $gt: new Date() } },
+          ],
+        },
+      ],
+    })
+
+    const latestApp = await db.collection('featuredApplications').findOne(
+      { $or: userMatch as any },
+      { sort: { createdAt: -1 } }
+    )
+
+    const isFeatured = !!activeSpotlight || profile?.isFeatured === true || profile?.isSpotlight === true
+    const isPending = !isFeatured && latestApp && latestApp.status === 'pending_review'
+    const spotlightStatus = isFeatured ? 'active' : isPending ? 'pending_review' : 'none'
+
+    const spotlightExpiresAt =
+      activeSpotlight?.expiryDate || profile?.spotlightExpiresAt || latestApp?.expiryDate || null
+    const spotlightSlot = activeSpotlight?.slotOrder || (profile as any)?.spotlightSlot || 1
+    const spotlightBadge =
+      activeSpotlight?.badge || latestApp?.badgeRequested || (profile as any)?.spotlightBadge || 'Spotlight Star'
+    const spotlightDurationDays =
+      activeSpotlight?.durationDays || latestApp?.durationDays || (profile as any)?.spotlightDurationDays || 14
+
+    const responseData = {
+      ...profile,
+      phoneNumber: (profile as any)?.phoneNumber || user?.phoneNumber || '',
+      isFeatured,
+      isSpotlight: isFeatured,
+      spotlightActive: isFeatured,
+      spotlightStatus,
+      isSpotlightPending: isPending,
+      spotlightExpiresAt,
+      spotlightSlot,
+      spotlightBadge,
+      spotlightDurationDays,
+    }
+
+    return NextResponse.json(successResponse(serialize(responseData)))
   } catch (error) { return handleApiError(error) }
 }

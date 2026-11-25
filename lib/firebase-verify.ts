@@ -64,9 +64,14 @@ function getFirebaseAdminAuth() {
     return null
   }
 
+  // Ensure newlines in private_key are unescaped (needed when passed via environment variables)
+  if (serviceAccount.private_key && typeof serviceAccount.private_key === 'string') {
+    serviceAccount.private_key = (serviceAccount.private_key as string).replace(/\\n/g, '\n')
+  }
+
   const app = initializeApp(
     {
-      credential: cert(serviceAccount),
+      credential: cert(serviceAccount as any),
       projectId,
     },
     'bookshoot-admin'

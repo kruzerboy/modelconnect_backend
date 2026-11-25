@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDb } from '@/lib/db'
 import { planSchema } from '@/lib/schemas'
-import { handleApiError } from '@/lib/middleware'
+import { handleApiError, requireAdmin } from '@/lib/middleware'
 import { successResponse } from '@/lib/api-response'
 import { parseBody, serialize } from '@/lib/route-utils'
 
@@ -174,6 +174,7 @@ const DEFAULT_ADMIN_PLANS = [
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAdmin(request)
     const db = await connectDb()
     let plans = await db
       .collection('plans')
@@ -210,6 +211,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAdmin(request)
     const validatedData = await parseBody(request, planSchema)
 
     const db = await connectDb()
