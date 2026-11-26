@@ -21,12 +21,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const db = await connectDb()
     const isApproved = status === 'Approved'
+    const targetObjId = objectId(id)
 
-    const updatedProf = await db.collection('modelProfiles').findOneAndUpdate(
-      { _id: objectId(id) },
+    // Check if target is in modelProfiles or businessProfiles
+    let updatedProf = await db.collection('modelProfiles').findOneAndUpdate(
+      { _id: targetObjId },
       {
         $set: {
           isVerified: isApproved,
+          verified: isApproved,
           verificationStatus: status,
           verificationNotes: notes || '',
           verifiedAt: isApproved ? new Date() : null,
@@ -36,15 +39,33 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       { returnDocument: 'after' }
     )
 
+    if (!updatedProf) {
+      updatedProf = await db.collection('businessProfiles').findOneAndUpdate(
+        { _id: targetObjId },
+        {
+          $set: {
+            isVerified: isApproved,
+            verified: isApproved,
+            verificationStatus: status,
+            verificationNotes: notes || '',
+            verifiedAt: isApproved ? new Date() : null,
+            updatedAt: new Date(),
+          },
+        },
+        { returnDocument: 'after' }
+      )
+    }
+
     if (updatedProf && updatedProf.userId) {
+      const uid = updatedProf.userId.toString()
       try {
         await db.collection('users').updateOne(
-          { _id: objectId(updatedProf.userId) },
+          { _id: objectId(uid) },
           { $set: { isVerified: isApproved, verified: isApproved, updatedAt: new Date() } }
         )
       } catch {
         await db.collection('users').updateOne(
-          { id: updatedProf.userId },
+          { id: uid },
           { $set: { isVerified: isApproved, verified: isApproved, updatedAt: new Date() } }
         )
       }
