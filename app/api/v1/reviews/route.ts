@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!targetUserId) {
-      throw new ApiError(ERROR_CODES.BAD_REQUEST, 400, 'userId parameter is required')
+      throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'userId parameter is required')
     }
 
     const query: Record<string, any> = { targetUserId: String(targetUserId) }
@@ -83,16 +83,16 @@ export async function POST(request: NextRequest) {
     const { targetUserId, opportunityId, applicationId, rating, comment, tags } = body
 
     if (!targetUserId) {
-      throw new ApiError(ERROR_CODES.BAD_REQUEST, 400, 'targetUserId is required')
+      throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'targetUserId is required')
     }
 
     if (String(targetUserId) === String(auth.userId)) {
-      throw new ApiError(ERROR_CODES.BAD_REQUEST, 400, 'You cannot review your own profile')
+      throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'You cannot review your own profile')
     }
 
     const numericRating = Number(rating)
     if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
-      throw new ApiError(ERROR_CODES.BAD_REQUEST, 400, 'Rating must be a number between 1 and 5')
+      throw new ApiError(ERROR_CODES.VALIDATION_ERROR, 400, 'Rating must be a number between 1 and 5')
     }
 
     const db = await connectDb()
