@@ -220,7 +220,7 @@ export async function enrichApplication(db: any, app: any) {
     modelHeight: modelProfile?.height || '',
     modelSpecialties: modelProfile?.specialties || app.modelSpecialties || [],
     modelPortfolio: portfolioList,
-    modelRating: modelProfile?.rating || 4.9,
+    modelRating: modelProfile?.rating || modelProfile?.ratings?.average || 0,
     modelInstagram: modelProfile?.instagram || modelProfile?.socialHandles?.instagram || modelProfile?.socialHandle || '',
     modelPhone: app.phone || app.contactNumber || modelUser?.phoneNumber || modelUser?.phone || modelProfile?.phone || '',
     modelEmail: modelUser?.email || modelProfile?.email || '',

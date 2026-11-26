@@ -77,8 +77,8 @@ export async function GET(request: NextRequest) {
               ? bizProf?.location?.city || 'Mumbai'
               : modelProf?.location?.city || 'Mumbai',
             country: 'India',
-            rating: slot.rating || 4.9,
-            reviewCount: slot.reviewCount || 32,
+            rating: slot.rating || (isBiz ? bizProf?.rating : modelProf?.rating) || 0,
+            reviewCount: slot.reviewCount || (isBiz ? bizProf?.reviewCount : modelProf?.reviewCount) || 0,
             startingPrice:
               slot.startingPrice ||
               (isBiz ? bizProf?.dailyRate || 15000 : modelProf?.dailyRate || 8500),
@@ -132,8 +132,8 @@ export async function GET(request: NextRequest) {
             avatarUrl: avatar,
             city: p.location?.city || 'Mumbai',
             country: 'India',
-            rating: 4.9,
-            reviewCount: 28,
+            rating: p.rating || p.ratings?.average || 0,
+            reviewCount: p.reviewCount || p.ratings?.count || 0,
             startingPrice: p.dailyRate || 8000,
             priceUnit: '/ day',
             experience: p.experience || 'Professional',
@@ -159,8 +159,8 @@ export async function GET(request: NextRequest) {
             avatarUrl: avatar,
             city: b.location?.city || 'Mumbai',
             country: 'India',
-            rating: 4.95,
-            reviewCount: 45,
+            rating: b.rating || b.ratings?.average || 0,
+            reviewCount: b.reviewCount || b.ratings?.count || 0,
             startingPrice: b.dailyRate || 18000,
             priceUnit: '/ day',
             experience: 'Studio Production Hire',
