@@ -49,6 +49,8 @@ export async function GET(request: NextRequest) {
           opportunityId: app.opportunityId,
           title: opp?.title || 'Brand Campaign Shoot',
           category: opp?.category || opp?.type || 'Campaign',
+          businessId: opp?.createdBy ? String(opp.createdBy) : null,
+          modelId: app.userId ? String(app.userId) : null,
           businessName: businessProfile?.companyName || (businessUser ? `${businessUser.firstName} ${businessUser.lastName}` : 'Studio Partner'),
           modelName: modelUser ? `${modelUser.firstName} ${modelUser.lastName}` : (app.modelName || 'Model / Talent'),
           modelAvatar: (Array.isArray(modelProfile?.portfolio) ? modelProfile.portfolio.find((p: any) => typeof p === 'string' && (p.startsWith('http://') || p.startsWith('https://'))) : null) || modelUser?.profilePicture || modelUser?.avatarUrl || null,
