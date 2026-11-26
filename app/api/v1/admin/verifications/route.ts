@@ -45,13 +45,17 @@ export async function GET(request: NextRequest) {
         : []
       const realCompCard = prof.compCardUrl || realPortfolio[0] || null
       const realGovId = prof.govIdFrontUrl || prof.govIdUrl || null
+      const isVerified = Boolean(prof.isVerified || prof.verified || user?.isVerified)
+      const hasUploadedDocs = Boolean(realGovId || prof.dgcaLicenseUrl || (prof.verificationSubmittedAt && realCompCard))
 
-      const rawStatus = prof.verificationStatus || (prof.isVerified ? 'Approved' : 'Pending Review')
-      let status: 'Pending Review' | 'Approved' | 'Rejected' = 'Pending Review'
-      if (rawStatus.toLowerCase() === 'approved' || prof.isVerified === true) {
+      const rawStatus = prof.verificationStatus || (isVerified ? 'Approved' : hasUploadedDocs ? 'Pending Review' : 'No Documents Uploaded')
+      let status: 'Pending Review' | 'Approved' | 'Rejected' | 'No Documents Uploaded' = 'No Documents Uploaded'
+      if (isVerified || rawStatus.toLowerCase() === 'approved') {
         status = 'Approved'
       } else if (rawStatus.toLowerCase() === 'rejected') {
         status = 'Rejected'
+      } else if (hasUploadedDocs || rawStatus === 'Pending Review') {
+        status = 'Pending Review'
       }
 
       return {
@@ -67,17 +71,20 @@ export async function GET(request: NextRequest) {
         role: user?.role || 'model',
         avatarUrl: user?.profilePicture || user?.avatarUrl || realCompCard || null,
         city: prof.location?.city || prof.city || 'Mumbai',
-        submittedAt: prof.updatedAt
-          ? new Date(prof.updatedAt).toLocaleDateString('en-US', {
+        submittedAt: prof.verificationSubmittedAt || prof.updatedAt
+          ? new Date(prof.verificationSubmittedAt || prof.updatedAt).toLocaleDateString('en-US', {
               month: 'short',
               day: 'numeric',
               year: 'numeric',
             })
           : 'Recent',
         status,
+        hasUploadedDocs,
         documents: {
           compCardUrl: realCompCard,
           govIdFrontUrl: realGovId,
+          govIdBackUrl: prof.govIdBackUrl || null,
+          selfieUrl: prof.selfieUrl || null,
           portfolioLinks: realPortfolio,
         },
         compCardData: {
@@ -96,12 +103,19 @@ export async function GET(request: NextRequest) {
     // 2. Format Business & Studio Verifications
     const businessList = bizProfiles.map((prof) => {
       const user = userMap.get(prof.userId?.toString())
-      const rawStatus = prof.verificationStatus || (prof.isVerified ? 'Approved' : 'Pending Review')
-      let status: 'Pending Review' | 'Approved' | 'Rejected' = 'Pending Review'
-      if (rawStatus.toLowerCase() === 'approved' || prof.isVerified === true) {
+      const isVerified = Boolean(prof.isVerified || prof.verified || user?.isVerified)
+      const realBizDoc = prof.companyRegistrationUrl || prof.gstCertificateUrl || prof.tradeLicenseUrl || null
+      const gstin = prof.gstin || prof.gstNumber || null
+      const hasUploadedDocs = Boolean(realBizDoc || gstin || prof.verificationSubmittedAt)
+
+      const rawStatus = prof.verificationStatus || (isVerified ? 'Approved' : hasUploadedDocs ? 'Pending Review' : 'No Documents Uploaded')
+      let status: 'Pending Review' | 'Approved' | 'Rejected' | 'No Documents Uploaded' = 'No Documents Uploaded'
+      if (isVerified || rawStatus.toLowerCase() === 'approved') {
         status = 'Approved'
       } else if (rawStatus.toLowerCase() === 'rejected') {
         status = 'Rejected'
+      } else if (hasUploadedDocs || rawStatus === 'Pending Review') {
+        status = 'Pending Review'
       }
 
       return {
@@ -115,25 +129,28 @@ export async function GET(request: NextRequest) {
         role: 'business',
         avatarUrl: prof.logoUrl || user?.profilePicture || user?.avatarUrl || null,
         city: prof.location?.city || prof.city || 'Mumbai',
-        submittedAt: prof.updatedAt
-          ? new Date(prof.updatedAt).toLocaleDateString('en-US', {
+        submittedAt: prof.verificationSubmittedAt || prof.updatedAt
+          ? new Date(prof.verificationSubmittedAt || prof.updatedAt).toLocaleDateString('en-US', {
               month: 'short',
               day: 'numeric',
               year: 'numeric',
             })
           : 'Recent',
         status,
+        hasUploadedDocs,
         businessData: {
           companyName: prof.companyName || 'Registered Business',
           industry: prof.industry || prof.business_type || 'Production / Media',
           website: prof.website || null,
+          gstin,
+          registrationType: prof.registrationType || (gstin ? 'GST Registered' : null),
           contactPersonName: prof.contactPersonName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : null),
           contactPersonDesignation: prof.contactPersonDesignation || 'Authorized Signatory',
-          verificationUrl: prof.verificationUrl || null,
+          verificationUrl: realBizDoc || prof.verificationUrl || null,
         },
         documents: {
           compCardUrl: prof.logoUrl || null,
-          govIdFrontUrl: prof.verificationUrl || null,
+          govIdFrontUrl: realBizDoc || null,
           portfolioLinks: [],
         },
         notes: prof.verificationNotes || '',
